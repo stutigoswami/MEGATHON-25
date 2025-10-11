@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Collaborative Editor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f0f2f5;
+        }
+        
+        .toolbar {
+            background: white;
+            padding: 10px 20px;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .toolbar button {
+            padding: 8px 12px;
+            border: 1px solid #ccc;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .toolbar button:hover {
+            background: #f0f0f0;
+        }
+        
+        .toolbar button.active {
+            background: #e3f2fd;
+            border-color: #2196F3;
+        }
+        
+        .toolbar select, .toolbar input {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .toolbar input[type="color"] {
+            width: 50px;
+            height: 35px;
+            cursor: pointer;
+        }
+        
+        .separator {
+            width: 1px;
+            height: 30px;
+            background: #ddd;
+            margin: 0 5px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .editor-panel {
+            flex: 1;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .editor-wrapper {
+            position: relative;
+            padding: 40px;
+            min-height: 600px;
+        }
+        
+        #editor {
+            width: 100%;
+            min-height: 500px;
+            font-size: 16px;
+            line-height: 1.6;
+            font-family: 'Georgia', serif;
+            outline: none;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        
+        .cursor-layer {
+            position: absolute;
+            top: 40px;
+            left: 40px;
+            pointer-events: none;
+            font-size: 16px;
+            line-height: 1.6;
+            font-family: 'Georgia', serif;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        
+        .remote-cursor {
+            position: absolute;
+            width: 2px;
+            height: 24px;
+            animation: blink 1s infinite;
+        }
+        
+        .cursor-label {
+            position: absolute;
+            top: -22px;
+            left: 0;
+            padding: 2px 6px;
+            border-radius: 3px;
+            color: white;
+            font-size: 11px;
+            font-weight: bold;
+            white-space: nowrap;
+            font-family: Arial, sans-serif;
+        }
+        
+        .remote-selection {
+            position: absolute;
+            opacity: 0.3;
+            pointer-events: none;
+        }
+        
+        @keyframes blink {
+            0%, 49% { opacity: 1; }
+            50%, 100% { opacity: 0; }
+        }
+        
+        .sidebar {
+            width: 250px;
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .sidebar h3 {
+            margin-bottom: 15px;
+            font-size: 16px;
+            color: #333;
+        }
+        
+        .status {
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .status.connected {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status.disconnected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .user-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px;
+            margin-bottom: 8px;
+            border-radius: 6px;
+            background: #f8f9fa;
+        }
+        
+        .user-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        
+        .user-name {
+            font-size: 14px;
+            color: #333;
+        }
+        
+        .me-badge {
+            margin-left: auto;
+            padding: 2px 6px;
+            background: #2196F3;
+            color: white;
+            border-radius: 10px;
+            font-size: 11px;
+        }
+    </style>
+</head>
+<body>
+    <div class="toolbar">
+        <button onclick="format('bold')" id="btn-bold" title="Bold"><b>B</b></button>
+        <button onclick="format('italic')" id="btn-italic" title="Italic"><i>I</i></button>
+        <button onclick="format('underline')" id="btn-underline" title="Underline"><u>U</u></button>
+        
+        <div class="separator"></div>
+        
+        <select id="fontFamily" onchange="format('fontName', this.value)">
+            <option value="Georgia">Georgia</option>
+            <option value="Arial">Arial</option>
+            <option value="Times New Roman">Times New Roman</option>
+            <option value="Courier New">Courier New</option>
+            <option value="Verdana">Verdana</option>
+        </select>
+        
+        <select id="fontSize" onchange="format('fontSize', this.value)">
+            <option value="1">Small</option>
+            <option value="3" selected>Normal</option>
+            <option value="5">Large</option>
+            <option value="7">Huge</option>
+        </select>
+        
+        <input type="color" id="textColor" value="#000000" onchange="format('foreColor', this.value)" title="Text Color">
+        
+        <div class="separator"></div>
+        
+        <button onclick="format('insertUnorderedList')" title="Bullet List">• List</button>
+        <button onclick="format('insertOrderedList')" title="Numbered List">1. List</button>
+    </div>
+    
+    <div class="container">
+        <div class="editor-panel">
+            <div class="editor-wrapper">
+                <div id="editor" contenteditable="true"></div>
+                <div class="cursor-layer" id="cursorLayer"></div>
+            </div>
+        </div>
+        
+        <div class="sidebar">
+            <div id="status" class="status disconnected">Connecting...</div>
+            
+            <h3>Active Users (<span id="userCount">0</span>)</h3>
+            <div id="userList"></div>
+        </div>
+    </div>
+
+    <script>
+        const editor = document.getElementById('editor');
+        const cursorLayer = document.getElementById('cursorLayer');
+        const status = document.getElementById('status');
+        const userCount = document.getElementById('userCount');
+        const userList = document.getElementById('userList');
+        
+        let myId = null;
+        let myColor = null;
+        let users = {};
+        let isUpdating = false;
+        
+        const ws = new WebSocket('ws://' + window.location.hostname + ':8080');
+        
+        ws.onopen = () => {
+            status.textContent = '✓ Connected';
+            status.className = 'status connected';
+        };
+        
+        ws.onmessage = (event) => {
+            const data = event.data;
+            const parts = data.split('|');
+            const type = parts[0];
+            
+            if(type === 'INIT'){
+                myId = parseInt(parts[1]);
+                myColor = parts[2];
+                const doc = parts.slice(3).join('|');
+                
+                isUpdating = true;
+                editor.innerHTML = doc;
+                isUpdating = false;
+                
+                document.title = 'User #' + myId + ' - Collaborative Editor';
+            }
+            else if(type === 'UPDATE'){
+                const userId = parseInt(parts[1]);
+                const doc = parts.slice(2).join('|');
+                
+                if(userId !== myId){
+                    isUpdating = true;
+                    const selection = saveSelection();
+                    editor.innerHTML = doc;
+                    restoreSelection(selection);
+                    isUpdating = false;
+                }
+            }
+            else if(type === 'USERS'){
+                users = {};
+                const userStr = parts[1];
+                if(userStr){
+                    const userParts = userStr.split(',');
+                    userParts.forEach(u => {
+                        const [id, color, cursor, selStart, selEnd] = u.split(':');
+                        users[id] = {
+                            id: parseInt(id),
+                            color: color,
+                            cursor: parseInt(cursor),
+                            selStart: parseInt(selStart),
+                            selEnd: parseInt(selEnd)
+                        };
+                    });
+                }
+                updateUserDisplay();
+                renderCursors();
+            }
+        };
+        
+        ws.onerror = () => {
+            status.textContent = '✗ Connection Error';
+            status.className = 'status disconnected';
+        };
+        
+        ws.onclose = () => {
+            status.textContent = '✗ Disconnected';
+            status.className = 'status disconnected';
+        };
+        
+        function format(command, value = null) {
+            document.execCommand(command, false, value);
+            editor.focus();
+            sendUpdate();
+        }
+        
+        function updateUserDisplay(){
+            const count = Object.keys(users).length;
+            userCount.textContent = count;
+            
+            userList.innerHTML = '';
+            for(let id in users){
+                const u = users[id];
+                const div = document.createElement('div');
+                div.className = 'user-item';
+                
+                const colorDiv = document.createElement('div');
+                colorDiv.className = 'user-color';
+                colorDiv.style.backgroundColor = u.color;
+                
+                const name = document.createElement('span');
+                name.className = 'user-name';
+                name.textContent = 'User #' + u.id;
+                
+                div.appendChild(colorDiv);
+                div.appendChild(name);
+                
+                if(u.id === myId){
+                    const badge = document.createElement('span');
+                    badge.className = 'me-badge';
+                    badge.textContent = 'You';
+                    div.appendChild(badge);
+                }
+                
+                userList.appendChild(div);
+            }
+        }
+        
+        function renderCursors(){
+            cursorLayer.innerHTML = '';
+            
+            for(let id in users){
+                const u = users[id];
+                if(u.id === myId) continue;
+                
+                // Create cursor
+                const cursor = document.createElement('div');
+                cursor.className = 'remote-cursor';
+                cursor.style.backgroundColor = u.color;
+                cursor.style.left = (u.cursor * 8) + 'px'; // Approximate positioning
+                cursor.style.top = '0px';
+                
+                const label = document.createElement('div');
+                label.className = 'cursor-label';
+                label.style.backgroundColor = u.color;
+                label.textContent = 'User #' + u.id;
+                
+                cursor.appendChild(label);
+                cursorLayer.appendChild(cursor);
+                
+                // Create selection highlight
+                if(u.selStart !== u.selEnd){
+                    const sel = document.createElement('div');
+                    sel.className = 'remote-selection';
+                    sel.style.backgroundColor = u.color;
+                    sel.style.left = (u.selStart * 8) + 'px';
+                    sel.style.width = ((u.selEnd - u.selStart) * 8) + 'px';
+                    sel.style.height = '24px';
+                    cursorLayer.appendChild(sel);
+                }
+            }
+        }
+        
+        function saveSelection() {
+            const selection = window.getSelection();
+            if (selection.rangeCount > 0) {
+                return selection.getRangeAt(0);
+            }
+            return null;
+        }
+        
+        function restoreSelection(range) {
+            if (range) {
+                const selection = window.getSelection();
+                selection.removeAllRanges();
+                selection.addRange(range);
+            }
+        }
+        
+        let sendTimeout;
+        function sendUpdate(){
+            if(isUpdating) return;
+            if(ws.readyState === WebSocket.OPEN){
+                clearTimeout(sendTimeout);
+                sendTimeout = setTimeout(() => {
+                    ws.send('DOC|' + editor.innerHTML);
+                    sendCursor();
+                }, 200);
+            }
+        }
+        
+        function sendCursor(){
+            if(ws.readyState === WebSocket.OPEN){
+                const selection = window.getSelection();
+                let start = 0, end = 0;
+                
+                if(selection.rangeCount > 0){
+                    const range = selection.getRangeAt(0);
+                    start = range.startOffset;
+                    end = range.endOffset;
+                }
+                
+                ws.send('CURSOR|' + start + '|' + start + '|' + end);
+            }
+        }
+        
+        editor.addEventListener('input', sendUpdate);
+        editor.addEventListener('keyup', sendCursor);
+        editor.addEventListener('mouseup', sendCursor);
+        editor.addEventListener('click', sendCursor);
+        
+        // Update button states
+        document.addEventListener('selectionchange', () => {
+            document.getElementById('btn-bold').classList.toggle('active', 
+                document.queryCommandState('bold'));
+            document.getElementById('btn-italic').classList.toggle('active', 
+                document.queryCommandState('italic'));
+            document.getElementById('btn-underline').classList.toggle('active', 
+                document.queryCommandState('underline'));
+        });
+    </script>
+</body>
+</html>
