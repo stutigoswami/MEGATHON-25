@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Collaborative Editor Test</title>
+  <style>
+    #editorDiv { display:none; }
+    #usersList { margin-top:10px; font-size:14px; }
+    textarea { width: 80%; height: 300px; }
+  </style>
+</head>
+<body>
+<h2>Collaborative Editor Test</h2>
+
+<div id="authDiv">
+  <h3>Login / Register</h3>
+  <input id="email" placeholder="Email"><br><br>
+  <input id="password" placeholder="Password" type="password"><br><br>
+  <button onclick="login()">Login</button>
+  <button onclick="register()">Register</button>
+  <p id="authMsg" style="color:red"></p>
+</div>
+
+<div id="editorDiv">
+  <textarea id="doc" readonly></textarea><br>
+  <input id="msg" placeholder="Type a chat message">
+  <button onclick="sendMessage()">Send</button>
+
+  <div id="usersList"><b>Connected Users:</b></div>
+</div>
+
+<script>
+const ws = new WebSocket("ws://localhost:8080");
+const authDiv = document.getElementById('authDiv');
+const editorDiv = document.getElementById('editorDiv');
+const authMsg = document.getElementById('authMsg');
+const docArea = document.getElementById('doc');
+const msgInput = document.getElementById('msg');
+const usersList = document.getElementById('usersList');
+
+let userId = null;
+let userColor = null;
+
+ws.onopen = () => console.log("Connected to server");
+
+ws.onmessage = e => {
+  const data = JSON.parse(e.data);
+
+  switch(data.type){
+    case "auth_required":
+      authDiv.style.display = "block";
+      editorDiv.style.display = "none";
+      authMsg.innerText = "";
+      break;
+
+    case "auth_success":
+      authDiv.style.display = "none";
+      editorDiv.style.display = "block";
+      userId = data.id;
+      userColor = data.color;
+      docArea.value = data[Object.keys(data)[4]]; // server sends doc concatenated
+      break;
+
+    case "auth_failed":
+      authMsg.innerText = data.message;
+      break;
+
+    case "users":
+      let html = "<b>Connected Users:</b><br>";
+      data.list.forEach(u => {
+        html += `<span style="color:${u.color}">${u.email} (id:${u.id})</span><br>`;
+      });
+      usersList.innerHTML = html;
+      break;
+
+    case "error":
+      alert(data.message);
+      break;
+
+    default:
+      // Treat as document update
+      docArea.value = data;
+      break;
+  }
+};
+
+function login(){
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value.trim();
+  ws.send(JSON.stringify({type:"login", email, password}));
+}
+
+function register(){
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value.trim();
+  ws.send(JSON.stringify({type:"register", email, password}));
+}
+
+function sendMessage(){
+  const msg = msgInput.value.trim();
+  if(msg !== "") ws.send(msg);
+  msgInput.value = "";
+}
+
+// Optional: Send cursor updates to server (not fully implemented yet)
+docArea.addEventListener("click", e => {
+  // You can extend this to send selection positions
+});
+</script>
+</body>
+</html>
