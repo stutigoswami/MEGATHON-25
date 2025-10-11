@@ -15,7 +15,9 @@ static void ev_handler(struct mg_connection *c, int ev, void *ev_data) {
         // Upgrade to WebSocket
         mg_ws_upgrade(c, hm, NULL);
       } else {
-        mg_serve_http(c, hm, s_web_root);
+        struct mg_serve_http_opts opts;
+        opts.document_root = s_web_root;
+        mg_serve_http(c, hm, opts);
       }
       break;
 
@@ -54,6 +56,7 @@ static void ev_handler(struct mg_connection *c, int ev, void *ev_data) {
 int main(void) {
   struct mg_mgr mgr;
   struct mg_connection *c;
+  struct mg_serve_http_opts opts;
 
   mg_mgr_init(&mgr, NULL);
 
