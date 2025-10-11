@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Collab Editor — Realtime Chat</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="./chat.css" />
+  </head>
+  <body>
+    <div class="chat-root">
+      <header class="chat-header">
+        <div class="title">Team Chat</div>
+        <div class="status">
+          <span id="status-dot" class="dot dot-red"></span>
+          <span id="status-text">Disconnected</span>
+        </div>
+      </header>
+
+      <section class="chat-body" id="chat-log" aria-live="polite"></section>
+
+      <footer class="chat-footer">
+        <input id="name" class="name" type="text" placeholder="Your name" />
+        <input id="message" class="message" type="text" placeholder="Type a message and press Enter..." />
+        <button id="send" class="send" type="button" title="Send">Send</button>
+      </footer>
+    </div>
+
+    <script src="./chat.js"></script>
+  </body>
+</html>
