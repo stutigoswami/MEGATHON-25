@@ -1,0 +1,202 @@
+#include "mongoose.h"
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <time.h>
+
+#define PORT "8080"
+#define MAX_DOC_SIZE 10000
+
+static char document[MAX_DOC_SIZE] = "";
+static int next_user_id = 1;
+
+struct user_data {
+    int id;
+    char color[8];
+    int cursor_pos;
+};
+
+struct user_list {
+    struct mg_connection *conn;
+    struct user_data *ud;
+    struct user_list *next;
+};
+
+static struct user_list *users_head = NULL;
+
+void add_user(struct mg_connection *nc, struct user_data *ud){
+    struct user_list *node = malloc(sizeof(struct user_list));
+    node->conn = nc;
+    node->ud = ud;
+    node->next = users_head;
+    users_head = node;
+}
+
+void remove_user(struct mg_connection *nc){
+    struct user_list **ptr = &users_head;
+    while(*ptr){
+        if((*ptr)->conn == nc){
+            struct user_list *tmp = *ptr;
+            *ptr = (*ptr)->next;
+            free(tmp->ud);
+            free(tmp);
+            return;
+        }
+        ptr = &(*ptr)->next;
+    }
+}
+
+void broadcast_all(const char *msg, size_t len){
+    struct user_list *u = users_head;
+    while(u){
+        mg_send_websocket_frame(u->conn, WEBSOCKET_OP_TEXT, msg, len);
+        u = u->next;
+    }
+}
+
+void broadcast_users(){
+    struct user_list *u = users_head;
+    char msg[2000];
+    int offset = 0;
+    
+    offset += snprintf(msg+offset, sizeof(msg)-offset, "{\"users\":[");
+    
+    int first = 1;
+    while(u){
+        if(!first) offset += snprintf(msg+offset, sizeof(msg)-offset, ",");
+        offset += snprintf(msg+offset, sizeof(msg)-offset,
+            "{\"id\":%d,\"color\":\"%s\",\"cursor\":%d}",
+            u->ud->id, u->ud->color, u->ud->cursor_pos);
+        first = 0;
+        u = u->next;
+    }
+    
+    snprintf(msg+offset, sizeof(msg)-offset, "]}");
+    
+    printf("Broadcasting users: %s\n", msg);
+    broadcast_all(msg, strlen(msg));
+}
+
+static void ev_handler(struct mg_connection *nc, int ev, void *ev_data){
+    if(ev == MG_EV_HTTP_REQUEST){
+        struct http_message *hm = (struct http_message *)ev_data;
+        printf("HTTP Request\n");
+        struct mg_serve_http_opts opts;
+        memset(&opts, 0, sizeof(opts));
+        opts.document_root = "../client";
+        mg_serve_http(nc, hm, opts);
+    }
+    else if(ev == MG_EV_WEBSOCKET_HANDSHAKE_DONE){
+        printf("WebSocket handshake done\n");
+        
+        struct user_data *ud = malloc(sizeof(struct user_data));
+        ud->id = next_user_id++;
+        snprintf(ud->color, sizeof(ud->color), "#%06X", (rand() % 0xFFFFFF));
+        ud->cursor_pos = 0;
+        nc->user_data = ud;
+        add_user(nc, ud);
+
+        printf("User %d connected with color %s\n", ud->id, ud->color);
+
+        // Send initial state
+        char buffer[MAX_DOC_SIZE+200];
+        snprintf(buffer, sizeof(buffer), "{\"id\":%d,\"color\":\"%s\",\"doc\":\"%s\"}",
+            ud->id, ud->color, document);
+        mg_send_websocket_frame(nc, WEBSOCKET_OP_TEXT, buffer, strlen(buffer));
+        printf("Sent initial state to User %d\n", ud->id);
+
+        // Broadcast user list
+        broadcast_users();
+    }
+    else if(ev == MG_EV_WEBSOCKET_FRAME){
+        struct websocket_message *wm = (struct websocket_message *)ev_data;
+        struct user_data *ud = (struct user_data*)nc->user_data;
+
+        if(wm->size == 0) return;
+
+        printf("Received WebSocket frame from User %d: %d bytes\n", ud->id, (int)wm->size);
+
+        // Copy message
+        char msg_copy[MAX_DOC_SIZE + 100];
+        int len = wm->size < sizeof(msg_copy)-1 ? wm->size : sizeof(msg_copy)-1;
+        memcpy(msg_copy, wm->data, len);
+        msg_copy[len] = '\0';
+
+        printf("Message content: %s\n", msg_copy);
+
+        // Simple JSON parsing
+        char *doc_start = strstr(msg_copy, "\"doc\":\"");
+        char *cursor_start = strstr(msg_copy, "\"cursor\":");
+        
+        if(doc_start){
+            doc_start += 7; // Skip "doc":"
+            char *doc_end = strstr(doc_start, "\",\"cursor\"");
+            if(!doc_end) doc_end = strstr(doc_start, "\"}");
+            
+            if(doc_end){
+                int doc_len = doc_end - doc_start;
+                if(doc_len >= 0 && doc_len < MAX_DOC_SIZE){
+                    memcpy(document, doc_start, doc_len);
+                    document[doc_len] = '\0';
+                    printf("Document updated: '%s'\n", document);
+                }
+            }
+        }
+        
+        if(cursor_start){
+            ud->cursor_pos = atoi(cursor_start + 9);
+            printf("User %d cursor: %d\n", ud->id, ud->cursor_pos);
+        }
+
+        // Broadcast document to others
+        char broadcast_msg[MAX_DOC_SIZE + 200];
+        snprintf(broadcast_msg, sizeof(broadcast_msg), 
+                 "{\"id\":%d,\"color\":\"%s\",\"doc\":\"%s\"}",
+                 ud->id, ud->color, document);
+        
+        struct user_list *u = users_head;
+        while(u){
+            if(u->conn != nc){
+                mg_send_websocket_frame(u->conn, WEBSOCKET_OP_TEXT, broadcast_msg, strlen(broadcast_msg));
+            }
+            u = u->next;
+        }
+
+        // Update user list
+        broadcast_users();
+    }
+    else if(ev == MG_EV_CLOSE){
+        printf("Connection closing\n");
+        if(nc->user_data){
+            struct user_data *ud = (struct user_data*)nc->user_data;
+            printf("User %d disconnected\n", ud->id);
+            remove_user(nc);
+            nc->user_data = NULL;
+            broadcast_users();
+        }
+    }
+}
+
+int main(void){
+    struct mg_mgr mgr;
+    struct mg_connection *nc;
+
+    srand(time(NULL));
+    
+    mg_mgr_init(&mgr, NULL);
+    printf("Starting server on port %s...\n", PORT);
+
+    nc = mg_bind(&mgr, PORT, ev_handler);
+    if(!nc){
+        printf("Failed to bind\n");
+        return 1;
+    }
+
+    mg_set_protocol_http_websocket(nc);
+    printf("Server running on http://localhost:%s\n\n", PORT);
+
+    for(;;) mg_mgr_poll(&mgr, 1000);
+
+    mg_mgr_free(&mgr);
+    return 0;
+}
