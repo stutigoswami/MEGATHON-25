@@ -1006,6 +1006,73 @@
             const storedSessionId = localStorage.getItem('session_id');
             const storedUsername = localStorage.getItem('username');
             
+            // Initialize theme
+            const savedTheme = localStorage.getItem('syncpad-theme') || 'sunset';
+            document.body.className = 'theme-' + savedTheme;
+            const themeSelector = document.getElementById('themeSelector');
+            if (themeSelector) themeSelector.value = savedTheme;
+            
+            // Initialize document title
+            const savedTitle = localStorage.getItem('syncpad-doc-title') || 'Untitled Document';
+            const docTitleInput = document.getElementById('docTitle');
+            if (docTitleInput) {
+                docTitleInput.value = savedTitle;
+                document.title = savedTitle + ' - SyncPad';
+                
+                // Set up document title listener
+                docTitleInput.addEventListener('input', () => {
+                    const title = docTitleInput.value || 'Untitled Document';
+                    document.title = title + ' - SyncPad';
+                    localStorage.setItem('syncpad-doc-title', title);
+                    // TODO: Send document title to other users via WebSocket
+                });
+            }
+            
+            // Initialize line spacing
+            const savedSpacing = localStorage.getItem('syncpad-line-spacing') || '1.15';
+            if (editor) editor.style.lineHeight = savedSpacing;
+            const lineSpacingSelect = document.getElementById('lineSpacing');
+            if (lineSpacingSelect) lineSpacingSelect.value = savedSpacing;
+            
+            // Keyboard shortcuts
+            document.addEventListener('keydown', (e) => {
+                if (e.ctrlKey || e.metaKey) {
+                    if (e.key === 'b') {
+                        e.preventDefault();
+                        format('bold');
+                    } else if (e.key === 'i') {
+                        e.preventDefault();
+                        format('italic');
+                    } else if (e.key === 'u') {
+                        e.preventDefault();
+                        format('underline');
+                    } else if (e.key === 't') {
+                        e.preventDefault();
+                        if (docTitleInput) {
+                            docTitleInput.focus();
+                            docTitleInput.select();
+                        }
+                    }
+                    
+                    if (e.shiftKey) {
+                        if (e.key === 'X') {
+                            e.preventDefault();
+                            format('strikeThrough');
+                        } else if (e.key === 'L') {
+                            e.preventDefault();
+                            format('justifyLeft');
+                        } else if (e.key === 'E') {
+                            e.preventDefault();
+                            format('justifyCenter');
+                        } else if (e.key === 'R') {
+                            e.preventDefault();
+                            format('justifyRight');
+                        }
+                    }
+                }
+            });
+            
+            // Check for existing session
             if (storedSessionId && storedUsername) {
                 // Verify the stored session
                 const isValid = await verifySession(storedSessionId);
@@ -1413,66 +1480,6 @@
             localStorage.setItem('syncpad-theme', themeName);
         }
         
-        // Load saved theme on startup
-        window.addEventListener('DOMContentLoaded', () => {
-            const savedTheme = localStorage.getItem('syncpad-theme') || 'sunset';
-            document.body.className = 'theme-' + savedTheme;
-            document.getElementById('themeSelector').value = savedTheme;
-        });
-        
-        // Document title management
-        const docTitleInput = document.getElementById('docTitle');
-        
-        docTitleInput.addEventListener('input', () => {
-            const title = docTitleInput.value || 'Untitled Document';
-            document.title = title + ' - SyncPad';
-            localStorage.setItem('syncpad-doc-title', title);
-            // TODO: Send document title to other users via WebSocket
-        });
-        
-        // Load saved document title
-        window.addEventListener('DOMContentLoaded', () => {
-            const savedTitle = localStorage.getItem('syncpad-doc-title') || 'Untitled Document';
-            docTitleInput.value = savedTitle;
-            document.title = savedTitle + ' - SyncPad';
-        });
-        
-        // Keyboard shortcuts
-        document.addEventListener('keydown', (e) => {
-            if (e.ctrlKey || e.metaKey) {
-                if (e.key === 'b') {
-                    e.preventDefault();
-                    format('bold');
-                } else if (e.key === 'i') {
-                    e.preventDefault();
-                    format('italic');
-                } else if (e.key === 'u') {
-                    e.preventDefault();
-                    format('underline');
-                } else if (e.key === 't') {
-                    e.preventDefault();
-                    docTitleInput.focus();
-                    docTitleInput.select();
-                }
-                
-                if (e.shiftKey) {
-                    if (e.key === 'X') {
-                        e.preventDefault();
-                        format('strikeThrough');
-                    } else if (e.key === 'L') {
-                        e.preventDefault();
-                        format('justifyLeft');
-                    } else if (e.key === 'E') {
-                        e.preventDefault();
-                        format('justifyCenter');
-                    } else if (e.key === 'R') {
-                        e.preventDefault();
-                        format('justifyRight');
-                    }
-                }
-            }
-        });
-        
         // Font size in pixels
         function setFontSize(size) {
             const selection = window.getSelection();
@@ -1533,13 +1540,6 @@
             localStorage.setItem('syncpad-line-spacing', spacing);
             sendUpdate();
         }
-        
-        // Load saved line spacing
-        window.addEventListener('DOMContentLoaded', () => {
-            const savedSpacing = localStorage.getItem('syncpad-line-spacing') || '1.15';
-            editor.style.lineHeight = savedSpacing;
-            document.getElementById('lineSpacing').value = savedSpacing;
-        });
         
         // Image upload functionality
         function openImageUpload() {
@@ -1636,9 +1636,9 @@
                 table.style.borderCollapse = 'collapse';
                 table.style.margin = '10px 0';
                 
-                for (let i = 0; i < parseInt(rows); i++) {
+                for (let i = 0; i < parseInt(rows, 10); i++) {
                     const tr = document.createElement('tr');
-                    for (let j = 0; j < parseInt(cols); j++) {
+                    for (let j = 0; j < parseInt(cols, 10); j++) {
                         const td = document.createElement(i === 0 ? 'th' : 'td');
                         td.style.border = '1px solid rgba(0, 0, 0, 0.2)';
                         td.style.padding = '8px';
