@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>InkDock - Collaborative Editor</title>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;600;700&family=Rubik:wght@400;500;700&family=Poppins:wght@400;500;600;700&family=Lato:wght@400;700&family=Nunito:wght@400;600;700&family=Ubuntu:wght@400;700&family=Montserrat:wght@500;600;700&family=Playfair+Display:wght@600;700&family=Libre+Baskerville:wght@400;700&family=Roboto:wght@400;500;700&family=Open+Sans:wght@400;600;700&family=Fira+Code:wght@400;500;700&family=Source+Sans+Pro:wght@400;600;700&family=Merriweather:wght@400;700&family=Ranade:wght@400;600;700" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{width:100%;height:100%;overflow:hidden;}
+body{font-family:'Poppins',sans-serif;background:#f9f7f4;overflow:hidden;height:100vh;transition:all 0.3s ease;}
+.hidden{display:none!important;}
+
+:root{--bg-primary:#FFF1E6;--bg-secondary:#fff8f2;--text-primary:#5D5D5D;--text-secondary:#8b8b8b;--accent:#FFC9A9;--accent-light:#ffe5d0;--accent-dark:#ffaa7f;--border:#ffe0c7;--shadow:rgba(0,0,0,0.08);}
+body.theme-vanilla{--bg-primary:#FFF1E6;--bg-secondary:#fff8f2;--text-primary:#5D5D5D;--accent:#FFC9A9;--text-secondary:#8b8b8b;--border:#ffe0c7;}
+body.theme-mint{--bg-primary:#E6FFF2;--bg-secondary:#f0fffb;--text-primary:#4A4A4A;--accent:#A3E3C1;--text-secondary:#7a9c8f;--border:#c8f0e0;}
+body.theme-lavender{--bg-primary:#F3E8FF;--bg-secondary:#f9f5ff;--text-primary:#4B4B4B;--accent:#C8A2FF;--text-secondary:#8b7ba8;--border:#e6d9ff;}
+body.theme-peach{--bg-primary:#FFECE6;--bg-secondary:#fff4f0;--text-primary:#5A4D4D;--accent:#FFB8A9;--text-secondary:#8b7870;--border:#ffe0d0;}
+body.theme-skyblue{--bg-primary:#E6F0FF;--bg-secondary:#eef5ff;--text-primary:#4C4C4C;--accent:#A9C8FF;--text-secondary:#7a8fab;--border:#d0deff;}
+body.theme-sage{--bg-primary:#EDF7EE;--bg-secondary:#f5fbf7;--text-primary:#4B4B4B;--accent:#B9D5B9;--text-secondary:#7a9a7f;--border:#d0e5d5;}
+body.theme-coral{--bg-primary:#FFF0F5;--bg-secondary:#fff6fa;--text-primary:#4C4C4C;--accent:#D8B8FF;--text-secondary:#8b7a9c;--border:#f0d9ff;}
+body.theme-powder{--bg-primary:#FFEFEF;--bg-secondary:#fff7f7;--text-primary:#4D4D4D;--accent:#FFB4B4;--text-secondary:#8b7474;--border:#ffd9d9;}
+
+#loginScreen{display:flex;justify-content:center;align-items:center;height:100vh;background:linear-gradient(135deg,var(--accent-dark) 0%,var(--accent) 100%);padding:20px;}
+.login-card{background:white;padding:45px;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,0.12);width:100%;max-width:440px;animation:slideUp 0.5s ease;}
+@keyframes slideUp{from{transform:translateY(20px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+.login-card h1{text-align:center;color:var(--text-primary);margin-bottom:12px;font-size:32px;font-family:'Playfair Display',serif;font-weight:700;}
+.login-card .subtitle{text-align:center;color:var(--text-secondary);font-size:13px;margin-bottom:28px;font-weight:500;}
+.demo-accounts{background:var(--bg-secondary);padding:16px;border-radius:10px;margin-bottom:28px;border-left:5px solid var(--accent);}
+.demo-accounts h3{font-size:13px;color:var(--text-primary);margin-bottom:10px;font-weight:600;}
+.demo-accounts ul{list-style:none;font-size:12px;color:var(--text-secondary);line-height:2;}
+.demo-accounts code{background:white;padding:3px 7px;border-radius:4px;font-family:'Fira Code',monospace;color:var(--accent-dark);font-weight:500;}
+.form-group{margin-bottom:18px;}
+.form-group label{display:block;margin-bottom:8px;color:var(--text-primary);font-weight:600;font-size:13px;}
+.form-group input{width:100%;padding:12px 14px;border:2px solid var(--border);border-radius:8px;font-size:14px;transition:all 0.3s;background:var(--bg-secondary);color:var(--text-primary);font-family:'Poppins',sans-serif;}
+.form-group input:focus{outline:none;border-color:var(--accent);background:white;box-shadow:0 0 0 3px var(--accent-light);}
+.btn-login{width:100%;padding:13px;background:var(--accent);color:white;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;transition:all 0.3s;font-family:'Poppins',sans-serif;box-shadow:0 4px 15px rgba(255,201,169,0.3);}
+.btn-login:hover:not(:disabled){background:var(--accent-dark);transform:translateY(-2px);box-shadow:0 6px 20px rgba(255,201,169,0.4);}
+.btn-login:disabled{background:#ccc;cursor:not-allowed;opacity:0.6;}
+.error{color:#e74c3c;font-size:13px;margin-top:10px;text-align:center;font-weight:500;}
+
+#editorScreen{display:flex;flex-direction:column;height:100vh;}
+.header{background:white;padding:14px 22px;box-shadow:0 2px 12px var(--shadow);display:flex;justify-content:space-between;align-items:center;z-index:100;border-bottom:2px solid var(--border);}
+.header h1{font-size:22px;color:var(--text-primary);font-family:'Playfair Display',serif;font-weight:700;letter-spacing:-0.5px;}
+.header-right{display:flex;align-items:center;gap:12px;}
+.user-info{display:flex;align-items:center;gap:15px;padding-right:15px;border-right:2px solid var(--border);}
+.username{color:var(--text-primary);font-weight:600;font-size:13px;}
+.user-status{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-secondary);}
+.status-dot{width:8px;height:8px;background:#27ae60;border-radius:50%;animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.6;}}
+.btn-theme{padding:10px 14px;background:var(--bg-secondary);border:2px solid var(--border);border-radius:8px;cursor:pointer;color:var(--text-primary);font-size:13px;font-weight:600;transition:all 0.3s;position:relative;}
+.btn-theme:hover{background:var(--accent-light);border-color:var(--accent);}
+.btn-logout{padding:10px 16px;background:#e74c3c;color:white;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;transition:all 0.3s;}
+.btn-logout:hover{background:#c0392b;transform:translateY(-1px);}
+.main-container{display:flex;flex:1;overflow:hidden;gap:1px;background:var(--border);}
+
+.toc-panel{position:fixed;left:0;top:60px;height:calc(100vh-60px);width:280px;background:white;border-right:2px solid var(--border);padding:20px;z-index:90;transform:translateX(-100%);transition:transform 0.3s ease;overflow-y:auto;box-shadow:4px 0 12px var(--shadow);}
+.toc-panel.open{transform:translateX(0);}
+.toc-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:12px;border-bottom:2px solid var(--border);}
+.toc-header h2{font-size:14px;color:var(--text-primary);font-weight:700;}
+.toc-close{background:none;border:none;cursor:pointer;color:var(--text-secondary);font-size:16px;transition:color 0.2s;}
+.toc-close:hover{color:var(--accent);}
+.toc-list{list-style:none;}
+.toc-item{margin-bottom:8px;padding:10px 12px;border-radius:6px;background:var(--bg-secondary);cursor:pointer;font-size:13px;color:var(--text-secondary);transition:all 0.2s;border-left:3px solid transparent;}
+.toc-item:hover{background:var(--accent-light);border-left-color:var(--accent);color:var(--text-primary);}
+.toc-overlay{position:fixed;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,0.2);z-index:80;opacity:0;pointer-events:none;transition:opacity 0.3s;}
+.toc-overlay.open{opacity:1;pointer-events:auto;}
+
+.sidebar{width:280px;background:white;border-right:2px solid var(--border);padding:18px;overflow-y:auto;display:flex;flex-direction:column;}
+.sidebar-section{margin-bottom:20px;}
+.sidebar-title{font-size:13px;font-weight:700;color:var(--text-primary);margin-bottom:12px;text-transform:uppercase;letter-spacing:0.5px;}
+.user-list{list-style:none;}
+.user-item{padding:11px 12px;margin-bottom:8px;border-radius:8px;background:var(--bg-secondary);display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text-secondary);transition:all 0.2s;}
+.user-item:hover{background:var(--accent-light);color:var(--text-primary);}
+.user-color{width:14px;height:14px;border-radius:50%;flex-shrink:0;box-shadow:0 2px 4px rgba(0,0,0,0.1);}
+.chat-panel{flex:1;display:flex;flex-direction:column;margin-top:auto;border-top:2px solid var(--border);padding-top:12px;}
+.chat-label{font-size:12px;font-weight:700;color:var(--text-primary);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px;}
+.chat-messages{flex:1;overflow-y:auto;background:var(--bg-secondary);padding:12px;border-radius:8px;margin-bottom:10px;max-height:200px;}
+.chat-message{margin-bottom:10px;padding:10px;background:white;border-radius:6px;border-left:3px solid var(--accent);font-size:12px;animation:slideIn 0.2s ease;}
+@keyframes slideIn{from{transform:translateX(-10px);opacity:0;}to{transform:translateX(0);opacity:1;}}
+.chat-message .user{font-weight:700;color:var(--accent-dark);display:block;margin-bottom:4px;font-size:11px;}
+.chat-message .time{font-size:10px;color:var(--text-secondary);margin-top:4px;display:block;}
+.chat-input{display:flex;gap:8px;}
+.chat-input input{flex:1;padding:10px 12px;border-radius:6px;border:2px solid var(--border);background:white;color:var(--text-primary);font-size:12px;font-family:'Poppins',sans-serif;transition:all 0.2s;}
+.chat-input input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-light);}
+.chat-input button{padding:10px 14px;border-radius:6px;background:var(--accent);color:white;border:none;cursor:pointer;font-weight:600;font-size:12px;transition:all 0.2s;font-family:'Poppins',sans-serif;}
+.chat-input button:hover{background:var(--accent-dark);transform:translateY(-1px);}
+
+.editor-container{flex:1;display:flex;flex-direction:column;background:white;margin:20px;border-radius:12px;box-shadow:0 8px 24px var(--shadow);overflow:hidden;border:2px solid var(--border);}
+.toolbar{padding:14px;background:var(--bg-secondary);border-bottom:2px solid var(--border);display:flex;gap:8px;flex-wrap:wrap;align-items:center;overflow-x:auto;}
+.toolbar-section{display:flex;gap:6px;align-items:center;}
+.toolbar-divider{width:1px;height:24px;background:var(--border);margin:0 4px;}
+.toolbar button,.toolbar select{padding:9px 12px;border:2px solid var(--border);background:white;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;transition:all 0.2s;color:var(--text-primary);font-family:'Poppins',sans-serif;}
+.toolbar button:hover,.toolbar select:hover{background:var(--accent-light);border-color:var(--accent);}
+.toolbar button.active{background:var(--accent);color:white;border-color:var(--accent-dark);}
+.toolbar select{cursor:pointer;}
+.color-input{width:40px;height:36px;border:2px solid var(--border);border-radius:6px;cursor:pointer;transition:all 0.2s;}
+.color-input:hover{border-color:var(--accent);}
+.btn-toc{background:var(--bg-secondary);border:2px solid var(--border);padding:9px 12px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;color:var(--text-primary);transition:all 0.2s;}
+.btn-toc:hover{background:var(--accent-light);border-color:var(--accent);}
+.editor-wrapper{flex:1;overflow-y:auto;padding:30px;position:relative;background:white;}
+#editor{min-height:100%;outline:none;font-size:16px;line-height:1.7;color:var(--text-primary);white-space:pre-wrap;word-wrap:break-word;font-family:'Poppins',sans-serif;}
+#editor h1{font-family:'Playfair Display',serif;font-size:28px;font-weight:700;margin:24px 0 12px;color:var(--text-primary);line-height:1.3;}
+#editor h2{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;margin:20px 0 10px;color:var(--text-primary);line-height:1.3;}
+#editor h3{font-family:'Rubik',sans-serif;font-size:18px;font-weight:700;margin:16px 0 8px;color:var(--text-primary);line-height:1.3;}
+.remote-cursor{position:absolute;width:2px;height:24px;pointer-events:none;z-index:100;transition:all 0.15s ease;animation:cursorBlink 1s infinite;}
+@keyframes cursorBlink{0%,49%{opacity:1;}50%,100%{opacity:0.3;}}
+.cursor-label{position:absolute;top:-24px;left:2px;padding:3px 8px;border-radius:4px;font-size:11px;color:white;white-space:nowrap;font-weight:600;box-shadow:0 2px 4px rgba(0,0,0,0.2);}
+.remote-selection{position:absolute;opacity:0.3;pointer-events:none;z-index:99;border-radius:2px;}
+.status-bar{padding:12px 20px;background:var(--bg-secondary);border-top:2px solid var(--border);font-size:12px;color:var(--text-secondary);display:flex;justify-content:space-between;flex-wrap:wrap;gap:15px;}
+.status-item{display:flex;align-items:center;gap:6px;font-weight:500;}
+.connection-status{position:fixed;bottom:20px;right:20px;padding:12px 16px;background:#27ae60;color:white;border-radius:8px;font-size:12px;box-shadow:0 4px 12px rgba(0,0,0,0.2);display:none;font-weight:600;animation:slideIn 0.3s ease;}
+.connection-status.disconnected{background:#e74c3c;display:flex;align-items:center;gap:8px;}
+.theme-menu{position:fixed;top:70px;right:20px;background:white;border:2px solid var(--border);border-radius:10px;padding:12px;box-shadow:0 8px 24px rgba(0,0,0,0.15);z-index:200;display:grid;grid-template-columns:repeat(2,1fr);gap:8px;width:220px;}
+.theme-menu button{padding:10px 12px;border:2px solid var(--border);border-radius:6px;background:var(--bg-secondary);color:var(--text-primary);font-weight:600;font-size:12px;cursor:pointer;transition:all 0.2s;}
+.theme-menu button:hover{background:var(--accent-light);border-color:var(--accent);}
+
+@media(max-width:768px){.sidebar{width:200px;}.editor-container{margin:10px;}}
+</style>
+</head>
+<body class="theme-vanilla">
+
+<div id="loginScreen">
+  <div class="login-card">
+    <h1><i class="fas fa-pen-fancy"></i> InkDock</h1>
+    <p class="subtitle">Collaborative Writing Made Simple</p>
+    <div class="demo-accounts">
+      <h3>Demo Accounts:</h3>
+      <ul>
+        <li><code>alice</code> / <code>alice123</code></li>
+        <li><code>bob</code> / <code>bob123</code></li>
+        <li><code>charlie</code> / <code>charlie123</code></li>
+      </ul>
+    </div>
+    <form id="loginForm">
+      <div class="form-group">
+        <label>Username</label>
+        <input type="text" id="username" required placeholder="e.g., alice">
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="password" required placeholder="e.g., alice123">
+      </div>
+      <button type="submit" class="btn-login" id="loginBtn">Login</button>
+      <div id="loginError" class="error"></div>
+    </form>
+  </div>
+</div>
+
+<div class="toc-overlay" id="tocOverlay"></div>
+<div class="toc-panel" id="tocPanel">
+  <div class="toc-header">
+    <h2>Table of Contents</h2>
+    <button class="toc-close" onclick="toggleTOC()"><i class="fas fa-times"></i></button>
+  </div>
+  <ul class="toc-list" id="tocList"></ul>
+</div>
+
+<div id="editorScreen" style="display:none;">
+  <div class="header">
+    <h1><i class="fas fa-pen-fancy"></i> InkDock</h1>
+    <div class="header-right">
+      <div class="user-info">
+        <div>
+          <div class="username" id="currentUsername"></div>
+          <div class="user-status">
+            <div class="status-dot"></div>
+            <span>Online</span>
+          </div>
+        </div>
+      </div>
+      <button class="btn-theme" onclick="showThemeMenu()">
+        <i class="fas fa-palette"></i> Theme
+      </button>
+      <button class="btn-logout" onclick="logout()">Logout</button>
+    </div>
+  </div>
+  <div class="main-container">
+    <div class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-title"><i class="fas fa-users"></i> Active Users</div>
+        <ul class="user-list" id="userList"></ul>
+      </div>
+      <div class="chat-panel">
+        <div class="chat-label"><i class="fas fa-comments"></i> Chat</div>
+        <div class="chat-messages" id="chatMessages"></div>
+        <div class="chat-input">
+          <input type="text" id="chatInput" placeholder="Message...">
+          <button onclick="sendChat()"><i class="fas fa-paper-plane"></i></button>
+        </div>
+      </div>
+    </div>
+
+    <div class="editor-container">
+      <div class="toolbar">
+        <div class="toolbar-section">
+          <button class="btn-toc" onclick="toggleTOC()" title="Table of Contents">
+            <i class="fas fa-list"></i> TOC
+          </button>
+        </div>
+        <div class="toolbar-divider"></div>
+        <div class="toolbar-section">
+          <select onchange="formatHeading(this.value); this.selectedIndex=0;" title="Heading">
+            <option disabled selected>Heading</option>
+            <option value="h1">H1 - Title</option>
+            <option value="h2">H2 - Heading</option>
+            <option value="h3">H3 - Subheading</option>
+            <option value="p">Paragraph</option>
+          </select>
+        </div>
+        <div class="toolbar-divider"></div>
+        <div class="toolbar-section">
+          <select onchange="formatDoc('fontName', this.value); this.selectedIndex=0;" title="Font">
+            <option disabled selected>Font</option>
+            <option value="Playfair Display">Playfair Display</option>
+            <option value="Josefin Sans">Josefin Sans</option>
+            <option value="Rubik">Rubik</option>
+            <option value="Poppins">Poppins</option>
+            <option value="Lato">Lato</option>
+            <option value="Nunito">Nunito</option>
+            <option value="Ubuntu">Ubuntu</option>
+            <option value="Montserrat">Montserrat</option>
+            <option value="Libre Baskerville">Libre Baskerville</option>
+            <option value="Roboto">Roboto</option>
+            <option value="Open Sans">Open Sans</option>
+            <option value="Fira Code">Fira Code</option>
+            <option value="Source Sans Pro">Source Sans Pro</option>
+            <option value="Merriweather">Merriweather</option>
+            <option value="Ranade">Ranade</option>
+          </select>
+          <select onchange="formatDoc('fontSize', this.value); this.selectedIndex=0;" title="Font Size">
+            <option disabled selected>Size</option>
+            <option value="8pt">8pt</option>
+            <option value="10pt">10pt</option>
+            <option value="12pt">12pt</option>
+            <option value="14pt">14pt</option>
+            <option value="16pt">16pt</option>
+            <option value="18pt">18pt</option>
+            <option value="20pt">20pt</option>
+            <option value="24pt">24pt</option>
+            <option value="28pt">28pt</option>
+            <option value="32pt">32pt</option>
+            <option value="36pt">36pt</option>
+            <option value="48pt">48pt</option>
+            <option value="60pt">60pt</option>
+            <option value="72pt">72pt</option>
+          </select>
+        </div>
+        <div class="toolbar-divider"></div>
+        <div class="toolbar-section">
+          <button onclick="formatDoc('bold')" title="Bold"><b>B</b></button>
+          <button onclick="formatDoc('italic')" title="Italic"><i>I</i></button>
+          <button onclick="formatDoc('underline')" title="Underline"><u>U</u></button>
+        </div>
+        <div class="toolbar-divider"></div>
+        <div class="toolbar-section">
+          <button onclick="formatDoc('insertUnorderedList')" title="Bullet List"><i class="fas fa-list-ul"></i></button>
+          <button onclick="formatDoc('insertOrderedList')" title="Numbered List"><i class="fas fa-list-ol"></i></button>
+        </div>
+        <div class="toolbar-divider"></div>
+        <div class="toolbar-section">
+          <input type="color" class="color-input" onchange="formatDoc('foreColor', this.value)" value="#5D5D5D" title="Text Color">
+        </div>
+        <div class="toolbar-divider"></div>
+        <div class="toolbar-section">
+          <input type="file" id="imageUpload" accept="image/*" style="display:none;">
+          <button onclick="document.getElementById('imageUpload').click()" title="Insert Image"><i class="fas fa-image"></i></button>
+          <button onclick="insertTable()" title="Insert Table"><i class="fas fa-table"></i></button>
+        </div>
+      </div>
+      <div class="editor-wrapper" id="editorWrapper">
+        <div id="editor" contenteditable="true"></div>
+      </div>
+      <div class="status-bar">
+        <div class="status-item"><i class="fas fa-font"></i> <span id="charCount">0 chars</span></div>
+        <div class="status-item"><i class="fas fa-words"></i> <span id="wordCount">0 words</span></div>
+        <div class="status-item"><i class="fas fa-palette"></i> <span id="currentTheme">Vanilla Sky</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="connection-status" id="connectionStatus"><i class="fas fa-spinner"></i> Reconnecting...</div>
+
+<script>
+let ws = null;
+let sessionId = null;
+let username = null;
+let myColor = null;
+let users = [];
+let remoteCursors = {};
+let remoteSelections = {};
+let reconnectTimer = null;
+let isUpdating = false;
+const themes = {
+  vanilla: { name: 'Vanilla Sky', class: 'theme-vanilla' },
+  mint: { name: 'Mint Whisper', class: 'theme-mint' },
+  lavender: { name: 'Lavender Mist', class: 'theme-lavender' },
+  peach: { name: 'Peach Fizz', class: 'theme-peach' },
+  skyblue: { name: 'Baby Blue Haze', class: 'theme-skyblue' },
+  sage: { name: 'Sage Calm', class: 'theme-sage' },
+  coral: { name: 'Peach Lavender', class: 'theme-coral' },
+  powder: { name: 'Powder Coral', class: 'theme-powder' }
+};
+let currentTheme = 'vanilla';
+
+function setTheme(themeKey){
+  currentTheme = themeKey;
+  const theme = themes[themeKey];
+  document.body.className = '';
+  document.body.classList.add(theme.class);
+  document.getElementById('currentTheme').textContent = theme.name;
+  localStorage.setItem('inkdock_theme', themeKey);
+}
+
+function showThemeMenu(){
+  const menu = document.createElement('div');
+  menu.className = 'theme-menu';
+  Object.entries(themes).forEach(([key, theme]) => {
+    const btn = document.createElement('button');
+    btn.textContent = theme.name;
+    btn.onclick = () => { setTheme(key); document.body.removeChild(menu); };
+    menu.appendChild(btn);
+  });
+  document.body.appendChild(menu);
+  setTimeout(() => document.addEventListener('click', function close(e){
+    if(!menu.contains(e.target) && e.target !== document.querySelector('.btn-theme')){
+      if(document.body.contains(menu)) document.body.removeChild(menu);
+      document.removeEventListener('click', close);
+    }
+  }), 100);
+}
+
+function updateTableOfContents(){
+  const editor = document.getElementById('editor');
+  const headings = editor.querySelectorAll('h1');
+  const tocList = document.getElementById('tocList');
+  tocList.innerHTML = '';
+  headings.forEach((h, idx) => {
+    const text = h.innerText || `Heading ${idx + 1}`;
+    h.id = `heading-${idx}`;
+    const li = document.createElement('li');
+    li.className = 'toc-item';
+    li.textContent = text;
+    li.onclick = () => {
+      h.scrollIntoView({ behavior: 'smooth' });
+      li.classList.add('active');
+      setTimeout(() => li.classList.remove('active'), 1000);
+    };
+    tocList.appendChild(li);
+  });
+}
+
+function toggleTOC(){
+  const panel = document.getElementById('tocPanel');
+  const overlay = document.getElementById('tocOverlay');
+  panel.classList.toggle('open');
+  overlay.classList.toggle('open');
+  overlay.onclick = () => toggleTOC();
+}
+
+window.addEventListener('load', () => {
+  const savedTheme = localStorage.getItem('inkdock_theme') || 'vanilla';
+  setTheme(savedTheme);
+  const stored = localStorage.getItem('session_id');
+  if(stored) verifySession(stored);
+});
+
+document.getElementById('loginForm').addEventListener('submit', async(e) => {
+  e.preventDefault();
+  const uname = document.getElementById('username').value;
+  const pwd = document.getElementById('password').value;
+  const btn = document.getElementById('loginBtn');
+  const err = document.getElementById('loginError');
+  btn.disabled = true;
+  btn.textContent = 'Logging in...';
+  err.textContent = '';
+  try{
+    const res = await fetch('/api/login', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({username: uname, password: pwd})});
+    const data = await res.json();
+    if(data.success){
+      sessionId = data.session_id;
+      username = data.username;
+      localStorage.setItem('session_id', sessionId);
+      showEditor();
+      connectWebSocket();
+    }else{
+      err.textContent = data.error || 'Login failed';
+      btn.disabled = false;
+      btn.textContent = 'Login';
+    }
+  }catch(e){
+    err.textContent = 'Connection error';
+    btn.disabled = false;
+    btn.textContent = 'Login';
+  }
+});
+
+function verifySession(sid){
+  fetch(`/api/verify?session_id=${encodeURIComponent(sid)}`)
+    .then(r => r.json())
+    .then(data => {
+      if(data.valid){
+        sessionId = sid;
+        username = data.username;
+        showEditor();
+        connectWebSocket();
+      }else{
+        localStorage.removeItem('session_id');
+      }
+    })
+    .catch(() => localStorage.removeItem('session_id'));
+}
+
+function showEditor(){
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('editorScreen').style.display = 'flex';
+  document.getElementById('currentUsername').textContent = username;
+}
+
+async function logout(){
+  if(ws) ws.close();
+  if(sessionId) await fetch('/api/logout', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({session_id: sessionId})});
+  localStorage.removeItem('session_id');
+  location.reload();
+}
+
+function connectWebSocket(){
+  const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  ws = new WebSocket(`${proto}//${location.host}/`);
+  ws.onopen = () => {
+    document.getElementById('connectionStatus').classList.remove('disconnected');
+    ws.send(JSON.stringify({type: 'auth', session_id: sessionId}));
+  };
+  ws.onmessage = (evt) => {
+    try{
+      const msg = JSON.parse(evt.data);
+      if(msg.type === 'init'){
+        isUpdating = true;
+        document.getElementById('editor').innerHTML = msg.content;
+        myColor = msg.color;
+        isUpdating = false;
+        updateStats();
+        updateTableOfContents();
+      }else if(msg.type === 'update'){
+        isUpdating = true;
+        document.getElementById('editor').innerHTML = msg.content;
+        isUpdating = false;
+        updateStats();
+        updateTableOfContents();
+      }else if(msg.type === 'users'){
+        updateUserList(msg.users);
+      }else if(msg.type === 'cursor'){
+        updateCursor(msg);
+      }else if(msg.type === 'selection'){
+        updateSelection(msg);
+      }else if(msg.type === 'chat'){
+        receiveChat(msg);
+      }
+    }catch(e){}
+  };
+  ws.onerror = (err) => {};
+  ws.onclose = () => {
+    document.getElementById('connectionStatus').classList.add('disconnected');
+    clearTimeout(reconnectTimer);
+    reconnectTimer = setTimeout(() => {
+      if(sessionId) connectWebSocket();
+    }, 3000);
+  };
+}
+
+const editor = document.getElementById('editor');
+editor.addEventListener('input', () => {
+  if(!isUpdating && ws && ws.readyState === WebSocket.OPEN){
+    ws.send(JSON.stringify({type: 'update', content: editor.innerHTML}));
+    updateStats();
+    updateTableOfContents();
+  }
+});
+editor.addEventListener('keyup', sendCursor);
+editor.addEventListener('mouseup', sendCursor);
+editor.addEventListener('click', sendCursor);
+
+function formatDoc(cmd, value = null){
+  editor.focus();
+  document.execCommand(cmd, false, value);
+  sendUpdate();
+}
+
+function formatHeading(tag){
+  editor.focus();
+  if(tag === 'p'){
+    document.execCommand('formatBlock', false, '<p>');
+  }else{
+    document.execCommand('formatBlock', false, `<${tag}>`);
+  }
+  sendUpdate();
+  updateTableOfContents();
+}
+
+function sendUpdate(){
+  if(ws && ws.readyState === WebSocket.OPEN){
+    ws.send(JSON.stringify({type: 'update', content: editor.innerHTML}));
+    updateStats();
+    updateTableOfContents();
+  }
+}
+
+function updateStats(){
+  const text = editor.innerText || '';
+  const charCount = text.length;
+  const wordCount = text.trim().split(/\s+/).filter(w => w.length > 0).length;
+  document.getElementById('charCount').textContent = `${charCount} char${charCount !== 1 ? 's' : ''}`;
+  document.getElementById('wordCount').textContent = `${wordCount} word${wordCount !== 1 ? 's' : ''}`;
+}
+
+function getTextOffset(root, node, offset){
+  let t = 0;
+  const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null, false);
+  let n;
+  while(n = w.nextNode()){
+    if(n === node) return t + offset;
+    t += n.textContent.length;
+  }
+  return t;
+}
+
+function getNodeAndOffsetFromTextOffset(root, textOffset){
+  const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null, false);
+  let t = 0, n;
+  while(n = w.nextNode()){
+    const len = n.textContent.length;
+    if(t + len >= textOffset) return {node: n, offset: textOffset - t};
+    t += len;
+  }
+  return {node: root, offset: 0};
+}
+
+function sendCursor(){
+  if(!ws || ws.readyState !== WebSocket.OPEN) return;
+  const sel = window.getSelection();
+  if(sel.rangeCount > 0){
+    const r = sel.getRangeAt(0);
+    if(r.collapsed){
+      const off = getTextOffset(editor, r.startContainer, r.startOffset);
+      ws.send(JSON.stringify({type: 'cursor', offset: off}));
+    }else{
+      const start = getTextOffset(editor, r.startContainer, r.startOffset);
+      const end = getTextOffset(editor, r.endContainer, r.endOffset);
+      ws.send(JSON.stringify({type: 'selection', start: start, end: end}));
+    }
+  }
+}
+
+function updateCursor(msg){
+  if(msg.username === username) return;
+  const wrapper = document.getElementById('editorWrapper');
+  let el = document.getElementById(`cursor-${msg.username}`);
+  if(!el){
+    el = document.createElement('div');
+    el.id = `cursor-${msg.username}`;
+    el.className = 'remote-cursor';
+    el.style.background = msg.color;
+    const label = document.createElement('div');
+    label.className = 'cursor-label';
+    label.textContent = msg.username;
+    label.style.backgroundColor = msg.color;
+    el.appendChild(label);
+    wrapper.appendChild(el);
+  }
+  remoteCursors[msg.username] = msg.offset;
+  const pos = getNodeAndOffsetFromTextOffset(editor, msg.offset);
+  if(pos.node){
+    const range = document.createRange();
+    range.setStart(pos.node, pos.offset);
+    range.setEnd(pos.node, pos.offset);
+    const rect = range.getBoundingClientRect();
+    const wrapRect = wrapper.getBoundingClientRect();
+    el.style.left = (rect.left - wrapRect.left + wrapper.scrollLeft) + 'px';
+    el.style.top = (rect.top - wrapRect.top + wrapper.scrollTop) + 'px';
+  }
+}
+
+function updateSelection(msg){
+  if(msg.username === username) return;
+  const wrapper = document.getElementById('editorWrapper');
+  let el = document.getElementById(`selection-${msg.username}`);
+  if(!el){
+    el = document.createElement('div');
+    el.id = `selection-${msg.username}`;
+    el.className = 'remote-selection';
+    el.style.backgroundColor = msg.color;
+    wrapper.appendChild(el);
+  }
+  remoteSelections[msg.username] = {start: msg.start, end: msg.end};
+  const startPos = getNodeAndOffsetFromTextOffset(editor, msg.start);
+  const endPos = getNodeAndOffsetFromTextOffset(editor, msg.end);
+  if(startPos.node && endPos.node){
+    const range = document.createRange();
+    range.setStart(startPos.node, startPos.offset);
+    range.setEnd(endPos.node, endPos.offset);
+    const rect = range.getBoundingClientRect();
+    const wrapRect = wrapper.getBoundingClientRect();
+    el.style.left = (rect.left - wrapRect.left + wrapper.scrollLeft) + 'px';
+    el.style.top = (rect.top - wrapRect.top + wrapper.scrollTop) + 'px';
+    el.style.width = rect.width + 'px';
+    el.style.height = rect.height + 'px';
+  }
+}
+
+function updateUserList(list){
+  users = list;
+  const ul = document.getElementById('userList');
+  ul.innerHTML = '';
+  list.forEach(u => {
+    const li = document.createElement('li');
+    li.className = 'user-item';
+    li.innerHTML = `<div class="user-color" style="background-color:${u.color}"></div><span>${u.username}${u.username === username ? ' (you)' : ''}</span>`;
+    ul.appendChild(li);
+  });
+}
+
+function sendChat(){
+  const msg = document.getElementById('chatInput').value.trim();
+  if(!msg || !ws || ws.readyState !== WebSocket.OPEN) return;
+  ws.send(JSON.stringify({type: 'chat', message: msg}));
+  document.getElementById('chatInput').value = '';
+}
+
+function receiveChat(msg){
+  const div = document.createElement('div');
+  div.className = 'chat-message';
+  const time = new Date().toLocaleTimeString('en-US', {hour: '2-digit', minute: '2-digit'});
+  div.innerHTML = `<span class="user" style="color:${msg.color}">${msg.username}</span><span>${msg.message}</span><span class="time">${time}</span>`;
+  const container = document.getElementById('chatMessages');
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+
+document.getElementById('imageUpload').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (event) => {
+    const img = document.createElement('img');
+    img.src = event.target.result;
+    img.style.maxWidth = '100%';
+    img.style.height = 'auto';
+    img.style.marginTop = '10px';
+    img.style.marginBottom = '10px';
+    img.style.borderRadius = '6px';
+    editor.focus();
+    const sel = window.getSelection();
+    if(sel.rangeCount > 0){
+      const range = sel.getRangeAt(0);
+      range.insertNode(img);
+      range.setStartAfter(img);
+      range.setEndAfter(img);
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }else{
+      editor.appendChild(img);
+    }
+    sendUpdate();
+  };
+  reader.readAsDataURL(file);
+  document.getElementById('imageUpload').value = '';
+});
+
+function insertTable(){
+  const rows = prompt('Number of rows:', '3');
+  if(rows === null) return;
+  const cols = prompt('Number of columns:', '3');
+  if(cols === null) return;
+  const r = parseInt(rows);
+  const c = parseInt(cols);
+  if(r < 1 || c < 1 || isNaN(r) || isNaN(c)) { alert('Invalid input'); return; }
+  const table = document.createElement('table');
+  table.style.width = '100%';
+  table.style.borderCollapse = 'collapse';
+  table.style.marginTop = '15px';
+  table.style.marginBottom = '15px';
+  table.style.border = '2px solid var(--border)';
+  for(let i = 0; i < r; i++){
+    const tr = document.createElement('tr');
+    for(let j = 0; j < c; j++){
+      const td = document.createElement('td');
+      td.contentEditable = 'true';
+      td.style.border = '1px solid var(--border)';
+      td.style.padding = '10px';
+      td.style.minWidth = '80px';
+      td.textContent = '';
+      if(i === 0) td.style.backgroundColor = 'var(--accent-light)';
+      tr.appendChild(td);
+    }
+    table.appendChild(tr);
+  }
+  editor.focus();
+  const sel = window.getSelection();
+  if(sel.rangeCount > 0){
+    const range = sel.getRangeAt(0);
+    range.insertNode(table);
+    range.setStartAfter(table);
+    range.setEndAfter(table);
+    sel.removeAllRanges();
+    sel.addRange(range);
+  }else{
+    editor.appendChild(table);
+  }
+  sendUpdate();
+}
+</script>
+</body>
+</html>
