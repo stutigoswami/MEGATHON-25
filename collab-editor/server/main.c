@@ -6,6 +6,7 @@
 
 #define PORT "8080"
 #define MAX_DOC_SIZE 50000
+#define MAX_CHAT_MSG_SIZE 2000
 
 static char document[MAX_DOC_SIZE] = "";
 static int next_user_id = 1;
@@ -155,6 +156,25 @@ static void ev_handler(struct mg_connection *nc, int ev, void *ev_data){
             
             // Broadcast user list with updated cursor positions
             broadcast_users_list();
+        }
+        else if(strncmp(msg, "CHAT|", 5) == 0){
+            // Chat message
+            char *content = msg + 5;
+            int content_len = strlen(content);
+            
+            // Validate message length
+            if(content_len > MAX_CHAT_MSG_SIZE){
+                return; // Ignore overly long messages
+            }
+            
+            time_t now = time(NULL);
+            
+            // Broadcast to all users
+            char broadcast[MAX_CHAT_MSG_SIZE + 200];
+            snprintf(broadcast, sizeof(broadcast), "CHAT|%d|%s|%ld|%s", 
+                     ud->id, ud->color, (long)now, content);
+            
+            broadcast_all(broadcast, strlen(broadcast));
         }
     }
     else if(ev == MG_EV_CLOSE){
