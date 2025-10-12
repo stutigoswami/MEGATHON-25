@@ -2,8 +2,48 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Collaborative Editor</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SyncPad</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&family=Roboto:wght@400;500;700&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            /* Sunset Theme */
+            --theme-sunset-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --theme-sunset-secondary: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --theme-sunset-bg: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 99%, #fad0c4 100%);
+            
+            /* Ocean Theme */
+            --theme-ocean-bg: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+            
+            /* Forest Theme */
+            --theme-forest-bg: linear-gradient(135deg, #d299c2 0%, #fef9d7 100%);
+            
+            /* Purple Rain Theme */
+            --theme-purple-bg: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%);
+            
+            /* Cherry Blossom Theme */
+            --theme-cherry-bg: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+            
+            /* Fruit Salad Theme */
+            --theme-fruit-bg: linear-gradient(135deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%);
+            
+            /* Space Odyssey Theme */
+            --theme-space-bg: linear-gradient(135deg, #434343 0%, #000000 100%);
+            
+            /* Neon Dreams Theme */
+            --theme-neon-bg: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            
+            /* Pastel Paradise Theme */
+            --theme-pastel-bg: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+            
+            --glass-bg: rgba(255, 255, 255, 0.15);
+            --glass-border: rgba(255, 255, 255, 0.3);
+            --text-primary: #2c3e50;
+            --text-secondary: #7f8c8d;
+        }
+        
         * {
             margin: 0;
             padding: 0;
@@ -11,60 +51,189 @@
         }
         
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #f0f2f5;
+            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--theme-sunset-bg);
+            transition: background 0.5s ease;
         }
         
-        .toolbar {
-            background: white;
-            padding: 10px 20px;
-            border-bottom: 1px solid #ddd;
+        body.theme-sunset { background: var(--theme-sunset-bg); }
+        body.theme-ocean { background: var(--theme-ocean-bg); }
+        body.theme-forest { background: var(--theme-forest-bg); }
+        body.theme-purple { background: var(--theme-purple-bg); }
+        body.theme-cherry { background: var(--theme-cherry-bg); }
+        body.theme-fruit { background: var(--theme-fruit-bg); }
+        body.theme-space { background: var(--theme-space-bg); }
+        body.theme-neon { background: var(--theme-neon-bg); }
+        body.theme-pastel { background: var(--theme-pastel-bg); }
+        
+        /* Header with Document Title */
+        .header {
+            background: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 15px 30px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            animation: slideDown 0.5s ease;
+        }
+        
+        .logo {
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-family: 'Poppins', sans-serif;
+            letter-spacing: -1px;
+        }
+        
+        .doc-title-input {
+            flex: 1;
+            max-width: 400px;
+            margin: 0 20px;
+            padding: 10px 15px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(10px);
+            font-size: 16px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+        
+        .doc-title-input:focus {
+            border-color: rgba(102, 126, 234, 0.8);
+            background: rgba(255, 255, 255, 0.4);
+            box-shadow: 0 0 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        .header-actions {
             display: flex;
             gap: 10px;
             align-items: center;
+        }
+        
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .toolbar {
+            background: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 12px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            gap: 8px;
+            align-items: center;
             flex-wrap: wrap;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
         }
         
         .toolbar button {
-            padding: 8px 12px;
-            border: 1px solid #ccc;
-            background: white;
-            border-radius: 4px;
+            padding: 8px 14px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(10px);
+            border-radius: 8px;
             cursor: pointer;
             font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .toolbar button::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.5);
+            transform: translate(-50%, -50%);
+            transition: width 0.4s, height 0.4s;
+        }
+        
+        .toolbar button:hover::before {
+            width: 200px;
+            height: 200px;
         }
         
         .toolbar button:hover {
-            background: #f0f0f0;
+            background: rgba(255, 255, 255, 0.45);
+            border-color: rgba(102, 126, 234, 0.5);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
         
         .toolbar button.active {
-            background: #e3f2fd;
-            border-color: #2196F3;
+            background: rgba(102, 126, 234, 0.3);
+            border-color: #667eea;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
         }
         
-        .toolbar select, .toolbar input {
-            padding: 8px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
+        .toolbar select, .toolbar input[type="number"] {
+            padding: 8px 12px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
             font-size: 14px;
+            background: rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(10px);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            outline: none;
+        }
+        
+        .toolbar select:hover, .toolbar input[type="number"]:hover {
+            background: rgba(255, 255, 255, 0.45);
+            border-color: rgba(102, 126, 234, 0.5);
+        }
+        
+        .toolbar select:focus, .toolbar input[type="number"]:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 12px rgba(102, 126, 234, 0.3);
         }
         
         .toolbar input[type="color"] {
-            width: 50px;
-            height: 35px;
+            width: 45px;
+            height: 38px;
             cursor: pointer;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            transition: all 0.2s ease;
+        }
+        
+        .toolbar input[type="color"]:hover {
+            border-color: rgba(102, 126, 234, 0.5);
+            transform: scale(1.05);
         }
         
         .separator {
             width: 1px;
             height: 30px;
-            background: #ddd;
+            background: rgba(255, 255, 255, 0.3);
             margin: 0 5px;
         }
         
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
             display: flex;
             gap: 20px;
@@ -73,10 +242,30 @@
         
         .editor-panel {
             flex: 1;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            background: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
             overflow: hidden;
+            transition: all 0.3s ease;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        .editor-panel:hover {
+            box-shadow: 0 12px 48px rgba(0, 0, 0, 0.15);
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
         
         .editor-wrapper {
@@ -140,81 +329,103 @@
         }
         
         .sidebar {
-            width: 250px;
-            background: white;
-            border-radius: 8px;
+            width: 280px;
+            background: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 16px;
             padding: 20px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            animation: fadeIn 0.5s ease 0.1s both;
         }
         
         .sidebar h3 {
             margin-bottom: 15px;
             font-size: 16px;
-            color: #333;
+            font-weight: 600;
+            color: var(--text-primary);
         }
         
         .status {
-            padding: 10px;
-            border-radius: 6px;
+            padding: 12px;
+            border-radius: 10px;
             margin-bottom: 15px;
             font-size: 14px;
             font-weight: 500;
+            transition: all 0.3s ease;
         }
         
         .status.connected {
-            background: #d4edda;
-            color: #155724;
+            background: rgba(76, 175, 80, 0.2);
+            color: #2e7d32;
+            border: 1px solid rgba(76, 175, 80, 0.3);
         }
         
         .status.disconnected {
-            background: #f8d7da;
-            color: #721c24;
+            background: rgba(244, 67, 54, 0.2);
+            color: #c62828;
+            border: 1px solid rgba(244, 67, 54, 0.3);
         }
         
         .user-item {
             display: flex;
             align-items: center;
             gap: 10px;
-            padding: 8px;
+            padding: 10px;
             margin-bottom: 8px;
-            border-radius: 6px;
-            background: #f8f9fa;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(10px);
+            transition: all 0.2s ease;
+        }
+        
+        .user-item:hover {
+            background: rgba(255, 255, 255, 0.45);
+            transform: translateX(5px);
         }
         
         .user-color {
-            width: 12px;
-            height: 12px;
+            width: 14px;
+            height: 14px;
             border-radius: 50%;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
         }
         
         .user-name {
             font-size: 14px;
-            color: #333;
+            font-weight: 500;
+            color: var(--text-primary);
         }
         
         .me-badge {
             margin-left: auto;
-            padding: 2px 6px;
-            background: #2196F3;
+            padding: 3px 8px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            border-radius: 10px;
+            border-radius: 12px;
             font-size: 11px;
+            font-weight: 600;
         }
         
         .chat-panel {
-            width: 300px;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            width: 320px;
+            background: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
             overflow: hidden;
             display: flex;
             flex-direction: column;
             max-height: 680px;
+            animation: fadeIn 0.5s ease 0.2s both;
         }
         
         .chat-header {
-            padding: 15px;
-            background: #2196F3;
+            padding: 18px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             font-weight: 600;
             font-size: 16px;
@@ -224,21 +435,28 @@
         }
         
         .chat-toggle {
-            background: none;
+            background: rgba(255, 255, 255, 0.2);
             border: none;
             color: white;
             cursor: pointer;
             font-size: 18px;
-            padding: 0;
-            width: 24px;
-            height: 24px;
+            padding: 4px 10px;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+        
+        .chat-toggle:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.1);
         }
         
         .chat-messages {
             flex: 1;
             overflow-y: auto;
             padding: 15px;
-            background: #f8f9fa;
+            background: rgba(248, 249, 250, 0.5);
             min-height: 400px;
             max-height: 540px;
         }
@@ -275,29 +493,31 @@
         
         .chat-user-name {
             font-weight: 600;
-            color: #333;
+            color: var(--text-primary);
         }
         
         .chat-timestamp {
-            color: #999;
+            color: var(--text-secondary);
             font-size: 11px;
             margin-left: auto;
         }
         
         .chat-message-content {
-            padding: 8px 12px;
-            background: white;
-            border-radius: 6px;
+            padding: 10px 14px;
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
             font-size: 14px;
-            color: #333;
+            color: var(--text-primary);
             word-wrap: break-word;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
         }
         
         .chat-input-area {
             padding: 15px;
-            border-top: 1px solid #ddd;
-            background: white;
+            border-top: 1px solid rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(10px);
         }
         
         .chat-input-wrapper {
@@ -307,30 +527,36 @@
         
         .chat-input {
             flex: 1;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 6px;
+            padding: 10px 14px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
             font-size: 14px;
             outline: none;
+            background: rgba(255, 255, 255, 0.5);
+            transition: all 0.2s ease;
         }
         
         .chat-input:focus {
-            border-color: #2196F3;
+            border-color: #667eea;
+            box-shadow: 0 0 12px rgba(102, 126, 234, 0.3);
+            background: rgba(255, 255, 255, 0.7);
         }
         
         .chat-send-btn {
-            padding: 10px 16px;
-            background: #2196F3;
+            padding: 10px 18px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
-            border-radius: 6px;
+            border-radius: 10px;
             cursor: pointer;
             font-size: 14px;
             font-weight: 600;
+            transition: all 0.2s ease;
         }
         
         .chat-send-btn:hover {
-            background: #1976D2;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
         }
         
         .chat-send-btn:disabled {
@@ -344,7 +570,7 @@
         }
         
         .chat-collapsed {
-            max-height: 50px;
+            max-height: 54px;
         }
         
         /* Login overlay styles */
@@ -355,6 +581,7 @@
             width: 100%;
             height: 100%;
             background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(10px);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -366,12 +593,14 @@
         }
         
         .login-box {
-            background: white;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
             padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             width: 100%;
-            max-width: 400px;
+            max-width: 420px;
             animation: slideDown 0.3s ease;
         }
         
@@ -388,14 +617,20 @@
         
         .login-box h2 {
             margin-bottom: 10px;
-            color: #333;
-            font-size: 24px;
+            color: var(--text-primary);
+            font-size: 32px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-family: 'Poppins', sans-serif;
         }
         
         .login-box p {
-            margin-bottom: 20px;
-            color: #666;
-            font-size: 14px;
+            margin-bottom: 25px;
+            color: var(--text-secondary);
+            font-size: 15px;
         }
         
         .login-form {
@@ -405,35 +640,42 @@
         }
         
         .login-form input {
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            font-size: 14px;
+            padding: 14px 16px;
+            border: 2px solid rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            font-size: 15px;
             outline: none;
+            transition: all 0.2s ease;
+            background: rgba(255, 255, 255, 0.8);
         }
         
         .login-form input:focus {
-            border-color: #2196F3;
+            border-color: #667eea;
+            box-shadow: 0 0 20px rgba(102, 126, 234, 0.2);
+            background: white;
         }
         
         .login-form button {
-            padding: 12px;
-            background: #2196F3;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
-            border-radius: 6px;
+            border-radius: 12px;
             font-size: 16px;
             font-weight: 600;
             cursor: pointer;
+            transition: all 0.3s ease;
         }
         
         .login-form button:hover {
-            background: #1976D2;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
         }
         
         .login-form button:disabled {
             background: #ccc;
             cursor: not-allowed;
+            transform: none;
         }
         
         .login-error {
@@ -449,24 +691,141 @@
         
         .login-info {
             margin-top: 20px;
-            padding: 15px;
-            background: #e3f2fd;
-            border-radius: 6px;
+            padding: 18px;
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 12px;
             font-size: 13px;
-            color: #333;
+            color: var(--text-primary);
         }
         
         .login-info strong {
             display: block;
-            margin-bottom: 8px;
-            color: #1976D2;
+            margin-bottom: 10px;
+            color: #667eea;
+            font-weight: 600;
         }
         
         .login-info code {
-            background: white;
-            padding: 2px 6px;
-            border-radius: 3px;
-            font-family: monospace;
+            background: rgba(102, 126, 234, 0.15);
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-weight: 500;
+        }
+        
+        /* Tooltip styles */
+        [title] {
+            position: relative;
+        }
+        
+        /* Image upload area */
+        .image-upload-area {
+            border: 2px dashed rgba(102, 126, 234, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.2);
+            margin: 10px 0;
+        }
+        
+        .image-upload-area:hover {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.1);
+        }
+        
+        .image-upload-area.dragging {
+            border-color: #764ba2;
+            background: rgba(118, 75, 162, 0.1);
+        }
+        
+        /* Table styles in editor */
+        #editor table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 10px 0;
+        }
+        
+        #editor table td, #editor table th {
+            border: 1px solid rgba(0, 0, 0, 0.2);
+            padding: 8px;
+            min-width: 50px;
+        }
+        
+        #editor table th {
+            background: rgba(102, 126, 234, 0.1);
+            font-weight: 600;
+        }
+        
+        /* Media gallery modal */
+        .media-gallery {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 16px;
+            padding: 30px;
+            max-width: 800px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            z-index: 9999;
+            display: none;
+        }
+        
+        .media-gallery.active {
+            display: block;
+        }
+        
+        .media-gallery-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 9998;
+            display: none;
+        }
+        
+        .media-gallery-overlay.active {
+            display: block;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            .container {
+                flex-direction: column;
+            }
+            
+            .sidebar, .chat-panel {
+                width: 100%;
+                max-height: 400px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .toolbar {
+                padding: 10px;
+                gap: 5px;
+            }
+            
+            .toolbar button {
+                padding: 6px 10px;
+                font-size: 12px;
+            }
+            
+            .header {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .doc-title-input {
+                max-width: 100%;
+            }
         }
     </style>
 </head>
@@ -474,8 +833,8 @@
     <!-- Login overlay -->
     <div class="login-overlay" id="loginOverlay">
         <div class="login-box">
-            <h2>Welcome to Collaborative Editor</h2>
-            <p>Please sign in to continue</p>
+            <h2>Welcome to SyncPad</h2>
+            <p>Collaborate in real-time, beautifully</p>
             
             <form class="login-form" onsubmit="handleLogin(event)">
                 <input type="text" id="loginUsername" placeholder="Username" required autocomplete="username">
@@ -493,38 +852,105 @@
         </div>
     </div>
     
+    <!-- Header with Logo and Document Title -->
+    <div class="header">
+        <div class="logo">✨ SyncPad</div>
+        <input type="text" class="doc-title-input" id="docTitle" placeholder="Untitled Document" value="Untitled Document" title="Document Title (Ctrl+T to focus)">
+        <div class="header-actions">
+            <span id="currentUser" style="color: var(--text-primary); font-size: 14px; font-weight: 500; margin-right: 10px;"></span>
+            <button onclick="handleLogout()" id="logoutButton" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; border: none; padding: 10px 20px; border-radius: 10px; font-weight: 600; cursor: pointer;">Logout</button>
+        </div>
+    </div>
+    
     <div class="toolbar">
-        <button onclick="format('bold')" id="btn-bold" title="Bold"><b>B</b></button>
-        <button onclick="format('italic')" id="btn-italic" title="Italic"><i>I</i></button>
-        <button onclick="format('underline')" id="btn-underline" title="Underline"><u>U</u></button>
+        <!-- Theme Selector -->
+        <select id="themeSelector" onchange="changeTheme(this.value)" title="Choose Theme">
+            <option value="sunset">🌅 Sunset</option>
+            <option value="ocean">🌊 Ocean</option>
+            <option value="forest">🌲 Forest</option>
+            <option value="purple">💜 Purple Rain</option>
+            <option value="cherry">🌸 Cherry Blossom</option>
+            <option value="fruit">🍎 Fruit Salad</option>
+            <option value="space">🌌 Space Odyssey</option>
+            <option value="neon">⚡ Neon Dreams</option>
+            <option value="pastel">🎨 Pastel Paradise</option>
+        </select>
         
         <div class="separator"></div>
         
-        <select id="fontFamily" onchange="format('fontName', this.value)">
+        <!-- Basic Formatting -->
+        <button onclick="format('bold')" id="btn-bold" title="Bold (Ctrl+B)"><b>B</b></button>
+        <button onclick="format('italic')" id="btn-italic" title="Italic (Ctrl+I)"><i>I</i></button>
+        <button onclick="format('underline')" id="btn-underline" title="Underline (Ctrl+U)"><u>U</u></button>
+        <button onclick="format('strikeThrough')" id="btn-strike" title="Strikethrough (Ctrl+Shift+X)"><s>S</s></button>
+        
+        <div class="separator"></div>
+        
+        <!-- Font Family -->
+        <select id="fontFamily" onchange="format('fontName', this.value)" title="Font Family">
             <option value="Georgia">Georgia</option>
             <option value="Arial">Arial</option>
             <option value="Times New Roman">Times New Roman</option>
             <option value="Courier New">Courier New</option>
             <option value="Verdana">Verdana</option>
+            <option value="Inter">Inter</option>
+            <option value="Poppins">Poppins</option>
+            <option value="Roboto">Roboto</option>
+            <option value="Montserrat">Montserrat</option>
         </select>
         
-        <select id="fontSize" onchange="format('fontSize', this.value)">
-            <option value="1">Small</option>
-            <option value="3" selected>Normal</option>
-            <option value="5">Large</option>
-            <option value="7">Huge</option>
+        <!-- Font Size in px -->
+        <select id="fontSizePx" onchange="setFontSize(this.value)" title="Font Size">
+            <option value="12px">12px</option>
+            <option value="14px">14px</option>
+            <option value="16px" selected>16px</option>
+            <option value="18px">18px</option>
+            <option value="20px">20px</option>
+            <option value="24px">24px</option>
+            <option value="32px">32px</option>
         </select>
         
+        <!-- Colors -->
         <input type="color" id="textColor" value="#000000" onchange="format('foreColor', this.value)" title="Text Color">
+        <input type="color" id="bgColor" value="#ffff00" onchange="format('backColor', this.value)" title="Highlight Color">
         
         <div class="separator"></div>
         
+        <!-- Text Alignment -->
+        <button onclick="format('justifyLeft')" title="Align Left (Ctrl+Shift+L)">⬅️</button>
+        <button onclick="format('justifyCenter')" title="Align Center (Ctrl+Shift+E)">↔️</button>
+        <button onclick="format('justifyRight')" title="Align Right (Ctrl+Shift+R)">➡️</button>
+        <button onclick="format('justifyFull')" title="Justify">⬌</button>
+        
+        <div class="separator"></div>
+        
+        <!-- Lists -->
         <button onclick="format('insertUnorderedList')" title="Bullet List">• List</button>
         <button onclick="format('insertOrderedList')" title="Numbered List">1. List</button>
         
-        <div style="margin-left: auto;"></div>
-        <span id="currentUser" style="color: #666; font-size: 14px; margin-right: 10px;"></span>
-        <button onclick="handleLogout()" id="logoutButton" style="background: #f44336; color: white; border-color: #f44336;">Logout</button>
+        <div class="separator"></div>
+        
+        <!-- Text Case -->
+        <select id="textCase" onchange="transformTextCase(this.value)" title="Text Case">
+            <option value="" selected>Case...</option>
+            <option value="upper">UPPERCASE</option>
+            <option value="lower">lowercase</option>
+            <option value="capital">Capitalize</option>
+        </select>
+        
+        <!-- Line Spacing -->
+        <select id="lineSpacing" onchange="setLineSpacing(this.value)" title="Line Spacing">
+            <option value="1.0">1.0x</option>
+            <option value="1.15" selected>1.15x</option>
+            <option value="1.5">1.5x</option>
+            <option value="2.0">2.0x</option>
+        </select>
+        
+        <div class="separator"></div>
+        
+        <!-- Media & Tables -->
+        <button onclick="openImageUpload()" title="Insert Image">🖼️ Image</button>
+        <button onclick="insertTable()" title="Insert Table">📊 Table</button>
     </div>
     
     <div class="container">
@@ -733,7 +1159,7 @@
                     editor.innerHTML = doc;
                     isUpdating = false;
                     
-                    document.title = 'User #' + myId + ' - Collaborative Editor';
+                    document.title = username + ' - SyncPad';
                 }
                 else if(type === 'UPDATE'){
                     const userId = parseInt(parts[1]);
@@ -908,16 +1334,6 @@
         editor.addEventListener('mouseup', sendCursor);
         editor.addEventListener('click', sendCursor);
         
-        // Update button states
-        document.addEventListener('selectionchange', () => {
-            document.getElementById('btn-bold').classList.toggle('active', 
-                document.queryCommandState('bold'));
-            document.getElementById('btn-italic').classList.toggle('active', 
-                document.queryCommandState('italic'));
-            document.getElementById('btn-underline').classList.toggle('active', 
-                document.queryCommandState('underline'));
-        });
-        
         // Chat functions
         function toggleChat() {
             const chatPanel = document.getElementById('chatPanel');
@@ -990,6 +1406,272 @@
             // Auto-scroll to bottom
             chatMessages.scrollTop = chatMessages.scrollHeight;
         }
+        
+        // Theme management
+        function changeTheme(themeName) {
+            document.body.className = 'theme-' + themeName;
+            localStorage.setItem('syncpad-theme', themeName);
+        }
+        
+        // Load saved theme on startup
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedTheme = localStorage.getItem('syncpad-theme') || 'sunset';
+            document.body.className = 'theme-' + savedTheme;
+            document.getElementById('themeSelector').value = savedTheme;
+        });
+        
+        // Document title management
+        const docTitleInput = document.getElementById('docTitle');
+        
+        docTitleInput.addEventListener('input', () => {
+            const title = docTitleInput.value || 'Untitled Document';
+            document.title = title + ' - SyncPad';
+            localStorage.setItem('syncpad-doc-title', title);
+            // TODO: Send document title to other users via WebSocket
+        });
+        
+        // Load saved document title
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedTitle = localStorage.getItem('syncpad-doc-title') || 'Untitled Document';
+            docTitleInput.value = savedTitle;
+            document.title = savedTitle + ' - SyncPad';
+        });
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey || e.metaKey) {
+                if (e.key === 'b') {
+                    e.preventDefault();
+                    format('bold');
+                } else if (e.key === 'i') {
+                    e.preventDefault();
+                    format('italic');
+                } else if (e.key === 'u') {
+                    e.preventDefault();
+                    format('underline');
+                } else if (e.key === 't') {
+                    e.preventDefault();
+                    docTitleInput.focus();
+                    docTitleInput.select();
+                }
+                
+                if (e.shiftKey) {
+                    if (e.key === 'X') {
+                        e.preventDefault();
+                        format('strikeThrough');
+                    } else if (e.key === 'L') {
+                        e.preventDefault();
+                        format('justifyLeft');
+                    } else if (e.key === 'E') {
+                        e.preventDefault();
+                        format('justifyCenter');
+                    } else if (e.key === 'R') {
+                        e.preventDefault();
+                        format('justifyRight');
+                    }
+                }
+            }
+        });
+        
+        // Font size in pixels
+        function setFontSize(size) {
+            const selection = window.getSelection();
+            if (selection.rangeCount > 0) {
+                const range = selection.getRangeAt(0);
+                const span = document.createElement('span');
+                span.style.fontSize = size;
+                
+                try {
+                    range.surroundContents(span);
+                } catch(e) {
+                    // If surroundContents fails, use execCommand
+                    document.execCommand('fontSize', false, '7');
+                    const fontElements = editor.querySelectorAll('font[size="7"]');
+                    fontElements.forEach(el => {
+                        el.removeAttribute('size');
+                        el.style.fontSize = size;
+                    });
+                }
+            }
+            editor.focus();
+            sendUpdate();
+        }
+        
+        // Text case transformation
+        function transformTextCase(caseType) {
+            if (!caseType) return;
+            
+            const selection = window.getSelection();
+            if (selection.rangeCount > 0) {
+                const range = selection.getRangeAt(0);
+                const text = range.toString();
+                
+                if (text) {
+                    let transformedText = text;
+                    if (caseType === 'upper') {
+                        transformedText = text.toUpperCase();
+                    } else if (caseType === 'lower') {
+                        transformedText = text.toLowerCase();
+                    } else if (caseType === 'capital') {
+                        transformedText = text.replace(/\b\w/g, c => c.toUpperCase());
+                    }
+                    
+                    range.deleteContents();
+                    range.insertNode(document.createTextNode(transformedText));
+                    sendUpdate();
+                }
+            }
+            
+            // Reset selector
+            document.getElementById('textCase').value = '';
+            editor.focus();
+        }
+        
+        // Line spacing
+        function setLineSpacing(spacing) {
+            editor.style.lineHeight = spacing;
+            localStorage.setItem('syncpad-line-spacing', spacing);
+            sendUpdate();
+        }
+        
+        // Load saved line spacing
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedSpacing = localStorage.getItem('syncpad-line-spacing') || '1.15';
+            editor.style.lineHeight = savedSpacing;
+            document.getElementById('lineSpacing').value = savedSpacing;
+        });
+        
+        // Image upload functionality
+        function openImageUpload() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.onchange = (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        const img = document.createElement('img');
+                        img.src = event.target.result;
+                        img.style.maxWidth = '100%';
+                        img.style.height = 'auto';
+                        img.style.borderRadius = '8px';
+                        img.style.margin = '10px 0';
+                        
+                        const selection = window.getSelection();
+                        if (selection.rangeCount > 0) {
+                            const range = selection.getRangeAt(0);
+                            range.insertNode(img);
+                            range.collapse(false);
+                        } else {
+                            editor.appendChild(img);
+                        }
+                        sendUpdate();
+                    };
+                    reader.readAsDataURL(file);
+                }
+            };
+            input.click();
+        }
+        
+        // Drag and drop for images
+        editor.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            editor.style.background = 'rgba(102, 126, 234, 0.1)';
+        });
+        
+        editor.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            editor.style.background = '';
+        });
+        
+        editor.addEventListener('drop', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            editor.style.background = '';
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                Array.from(files).forEach(file => {
+                    if (file.type.startsWith('image/')) {
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                            const img = document.createElement('img');
+                            img.src = event.target.result;
+                            img.style.maxWidth = '100%';
+                            img.style.height = 'auto';
+                            img.style.borderRadius = '8px';
+                            img.style.margin = '10px 0';
+                            
+                            const range = document.createRange();
+                            const sel = window.getSelection();
+                            
+                            // Insert at drop position
+                            const dropPos = e.target;
+                            if (dropPos === editor || editor.contains(dropPos)) {
+                                if (dropPos === editor) {
+                                    editor.appendChild(img);
+                                } else {
+                                    dropPos.parentNode.insertBefore(img, dropPos.nextSibling);
+                                }
+                            }
+                            sendUpdate();
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                });
+            }
+        });
+        
+        // Table insertion
+        function insertTable() {
+            const rows = prompt('Number of rows:', '3');
+            const cols = prompt('Number of columns:', '3');
+            
+            if (rows && cols) {
+                const table = document.createElement('table');
+                table.style.width = '100%';
+                table.style.borderCollapse = 'collapse';
+                table.style.margin = '10px 0';
+                
+                for (let i = 0; i < parseInt(rows); i++) {
+                    const tr = document.createElement('tr');
+                    for (let j = 0; j < parseInt(cols); j++) {
+                        const td = document.createElement(i === 0 ? 'th' : 'td');
+                        td.style.border = '1px solid rgba(0, 0, 0, 0.2)';
+                        td.style.padding = '8px';
+                        td.contentEditable = 'true';
+                        td.textContent = i === 0 ? `Header ${j + 1}` : '';
+                        tr.appendChild(td);
+                    }
+                    table.appendChild(tr);
+                }
+                
+                const selection = window.getSelection();
+                if (selection.rangeCount > 0) {
+                    const range = selection.getRangeAt(0);
+                    range.insertNode(table);
+                    range.collapse(false);
+                } else {
+                    editor.appendChild(table);
+                }
+                sendUpdate();
+            }
+        }
+        
+        // Update button states for strikethrough
+        document.addEventListener('selectionchange', () => {
+            document.getElementById('btn-bold').classList.toggle('active', 
+                document.queryCommandState('bold'));
+            document.getElementById('btn-italic').classList.toggle('active', 
+                document.queryCommandState('italic'));
+            document.getElementById('btn-underline').classList.toggle('active', 
+                document.queryCommandState('underline'));
+            document.getElementById('btn-strike').classList.toggle('active', 
+                document.queryCommandState('strikeThrough'));
+        });
     </script>
 </body>
 </html>
