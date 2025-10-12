@@ -30,15 +30,17 @@ static void ev_handler(struct mg_connection *c, int ev, void *ev_data) {
     }
 
     case MG_EV_WEBSOCKET_FRAME: {
-  struct websocket_message *wm = (struct websocket_message *) ev_data;
-  struct mg_connection *nc;
-  for (nc = c->mgr->active_connections; nc != NULL; nc = nc->next) {
-    if (nc->flags & MG_F_IS_WEBSOCKET) {
-      mg_send_websocket_frame(nc, WEBSOCKET_OP_TEXT, wm->data, (int) wm->size);
+      // Broadcast incoming message to all WS clients EXCEPT the sender
+      struct websocket_message *wm = (struct websocket_message *) ev_data;
+      struct mg_connection *nc;
+      for (nc = c->mgr->active_connections; nc != NULL; nc = nc->next) {
+        if ((nc->flags & MG_F_IS_WEBSOCKET) && nc != c) {
+          mg_send_websocket_frame(nc, WEBSOCKET_OP_TEXT, wm->data, (int) wm->size);
+        }
+      }
+      break;
     }
-  }
-  break;
-}
+
     case MG_EV_CLOSE: {
       // Notify others when a WS client disconnects
       if (c->flags & MG_F_IS_WEBSOCKET) {
