@@ -1,0 +1,14 @@
+# Compiled binaries
+collab-editor/server/server
+server/server
+server
+*.o
+*.out
+
+# Mac files
+.DS_Store
+
+# Editor files
+*~
+*.swp
+*.swo

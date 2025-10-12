@@ -156,6 +156,18 @@ static void ev_handler(struct mg_connection *nc, int ev, void *ev_data){
             // Broadcast user list with updated cursor positions
             broadcast_users_list();
         }
+        else if(strncmp(msg, "CHAT|", 5) == 0){
+            // Chat message
+            char *content = msg + 5;
+            time_t now = time(NULL);
+            
+            // Broadcast to all users
+            char broadcast[MAX_DOC_SIZE + 100];
+            snprintf(broadcast, sizeof(broadcast), "CHAT|%d|%s|%ld|%s", 
+                     ud->id, ud->color, (long)now, content);
+            
+            broadcast_all(broadcast, strlen(broadcast));
+        }
     }
     else if(ev == MG_EV_CLOSE){
         if(nc->user_data){
