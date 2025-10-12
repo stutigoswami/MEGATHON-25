@@ -346,9 +346,153 @@
         .chat-collapsed {
             max-height: 50px;
         }
+        
+        /* Login overlay styles */
+        .login-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        }
+        
+        .login-overlay.hidden {
+            display: none;
+        }
+        
+        .login-box {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 400px;
+            animation: slideDown 0.3s ease;
+        }
+        
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .login-box h2 {
+            margin-bottom: 10px;
+            color: #333;
+            font-size: 24px;
+        }
+        
+        .login-box p {
+            margin-bottom: 20px;
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .login-form input {
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            outline: none;
+        }
+        
+        .login-form input:focus {
+            border-color: #2196F3;
+        }
+        
+        .login-form button {
+            padding: 12px;
+            background: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        
+        .login-form button:hover {
+            background: #1976D2;
+        }
+        
+        .login-form button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .login-error {
+            color: #d32f2f;
+            font-size: 14px;
+            margin-top: -5px;
+            display: none;
+        }
+        
+        .login-error.show {
+            display: block;
+        }
+        
+        .login-info {
+            margin-top: 20px;
+            padding: 15px;
+            background: #e3f2fd;
+            border-radius: 6px;
+            font-size: 13px;
+            color: #333;
+        }
+        
+        .login-info strong {
+            display: block;
+            margin-bottom: 8px;
+            color: #1976D2;
+        }
+        
+        .login-info code {
+            background: white;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
     </style>
 </head>
 <body>
+    <!-- Login overlay -->
+    <div class="login-overlay" id="loginOverlay">
+        <div class="login-box">
+            <h2>Welcome to Collaborative Editor</h2>
+            <p>Please sign in to continue</p>
+            
+            <form class="login-form" onsubmit="handleLogin(event)">
+                <input type="text" id="loginUsername" placeholder="Username" required autocomplete="username">
+                <input type="password" id="loginPassword" placeholder="Password" required autocomplete="current-password">
+                <div class="login-error" id="loginError">Invalid username or password</div>
+                <button type="submit" id="loginButton">Sign In</button>
+            </form>
+            
+            <div class="login-info">
+                <strong>Test Accounts:</strong>
+                <div>Username: <code>alice</code> / Password: <code>alice123</code></div>
+                <div>Username: <code>bob</code> / Password: <code>bob123</code></div>
+                <div>Username: <code>charlie</code> / Password: <code>charlie123</code></div>
+            </div>
+        </div>
+    </div>
+    
     <div class="toolbar">
         <button onclick="format('bold')" id="btn-bold" title="Bold"><b>B</b></button>
         <button onclick="format('italic')" id="btn-italic" title="Italic"><i>I</i></button>
@@ -377,6 +521,10 @@
         
         <button onclick="format('insertUnorderedList')" title="Bullet List">• List</button>
         <button onclick="format('insertOrderedList')" title="Numbered List">1. List</button>
+        
+        <div style="margin-left: auto;"></div>
+        <span id="currentUser" style="color: #666; font-size: 14px; margin-right: 10px;"></span>
+        <button onclick="handleLogout()" id="logoutButton" style="background: #f44336; color: white; border-color: #f44336;">Logout</button>
     </div>
     
     <div class="container">
@@ -415,85 +563,229 @@
         const status = document.getElementById('status');
         const userCount = document.getElementById('userCount');
         const userList = document.getElementById('userList');
+        const loginOverlay = document.getElementById('loginOverlay');
+        const loginError = document.getElementById('loginError');
+        const currentUserSpan = document.getElementById('currentUser');
         
         let myId = null;
         let myColor = null;
         let users = {};
         let isUpdating = false;
+        let ws = null;
+        let sessionId = null;
+        let username = null;
         
-        const ws = new WebSocket('ws://' + window.location.hostname + ':8080');
-        
-        ws.onopen = () => {
-            status.textContent = '✓ Connected';
-            status.className = 'status connected';
-        };
-        
-        ws.onmessage = (event) => {
-            const data = event.data;
-            const parts = data.split('|');
-            const type = parts[0];
+        // Check for existing session on load
+        window.addEventListener('DOMContentLoaded', async () => {
+            const storedSessionId = localStorage.getItem('session_id');
+            const storedUsername = localStorage.getItem('username');
             
-            if(type === 'INIT'){
-                myId = parseInt(parts[1]);
-                myColor = parts[2];
-                const doc = parts.slice(3).join('|');
-                
-                isUpdating = true;
-                editor.innerHTML = doc;
-                isUpdating = false;
-                
-                document.title = 'User #' + myId + ' - Collaborative Editor';
+            if (storedSessionId && storedUsername) {
+                // Verify the stored session
+                const isValid = await verifySession(storedSessionId);
+                if (isValid) {
+                    sessionId = storedSessionId;
+                    username = storedUsername;
+                    hideLoginOverlay();
+                    initWebSocket();
+                } else {
+                    // Invalid/expired session
+                    localStorage.removeItem('session_id');
+                    localStorage.removeItem('username');
+                    showLoginOverlay();
+                }
+            } else {
+                showLoginOverlay();
             }
-            else if(type === 'UPDATE'){
-                const userId = parseInt(parts[1]);
-                const doc = parts.slice(2).join('|');
+        });
+        
+        function showLoginOverlay() {
+            loginOverlay.classList.remove('hidden');
+        }
+        
+        function hideLoginOverlay() {
+            loginOverlay.classList.add('hidden');
+            currentUserSpan.textContent = 'Logged in as ' + username;
+        }
+        
+        async function verifySession(sid) {
+            try {
+                const response = await fetch('/api/verify?session_id=' + encodeURIComponent(sid));
+                const data = await response.json();
+                return data.valid === true;
+            } catch (err) {
+                console.error('Session verification failed:', err);
+                return false;
+            }
+        }
+        
+        async function handleLogin(event) {
+            event.preventDefault();
+            
+            const usernameInput = document.getElementById('loginUsername');
+            const passwordInput = document.getElementById('loginPassword');
+            const loginButton = document.getElementById('loginButton');
+            
+            loginError.classList.remove('show');
+            loginButton.disabled = true;
+            loginButton.textContent = 'Signing in...';
+            
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: 'username=' + encodeURIComponent(usernameInput.value) + 
+                          '&password=' + encodeURIComponent(passwordInput.value)
+                });
                 
-                if(userId !== myId){
+                if (response.ok) {
+                    const data = await response.json();
+                    sessionId = data.session_id;
+                    username = data.username;
+                    
+                    // Store in localStorage
+                    localStorage.setItem('session_id', sessionId);
+                    localStorage.setItem('username', username);
+                    
+                    // Hide login overlay
+                    hideLoginOverlay();
+                    
+                    // Initialize WebSocket connection
+                    initWebSocket();
+                } else {
+                    loginError.classList.add('show');
+                }
+            } catch (err) {
+                console.error('Login failed:', err);
+                loginError.textContent = 'Connection error. Please try again.';
+                loginError.classList.add('show');
+            } finally {
+                loginButton.disabled = false;
+                loginButton.textContent = 'Sign In';
+            }
+        }
+        
+        async function handleLogout() {
+            if (!sessionId) return;
+            
+            try {
+                await fetch('/api/logout', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: 'session_id=' + encodeURIComponent(sessionId)
+                });
+            } catch (err) {
+                console.error('Logout request failed:', err);
+            }
+            
+            // Clear local storage
+            localStorage.removeItem('session_id');
+            localStorage.removeItem('username');
+            
+            // Close WebSocket
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
+            
+            // Reset state
+            sessionId = null;
+            username = null;
+            myId = null;
+            myColor = null;
+            users = {};
+            
+            // Show login overlay
+            showLoginOverlay();
+            
+            // Update UI
+            status.textContent = 'Disconnected';
+            status.className = 'status disconnected';
+            userCount.textContent = '0';
+            userList.innerHTML = '';
+            editor.innerHTML = '';
+            document.getElementById('chatMessages').innerHTML = '';
+        }
+        
+        function initWebSocket() {
+            ws = new WebSocket('ws://' + window.location.hostname + ':8080?session_id=' + encodeURIComponent(sessionId));
+            
+            ws.onopen = () => {
+                status.textContent = '✓ Connected';
+                status.className = 'status connected';
+            };
+            
+            ws.onmessage = (event) => {
+                const data = event.data;
+                const parts = data.split('|');
+                const type = parts[0];
+                
+                if(type === 'INIT'){
+                    myId = parseInt(parts[1]);
+                    myColor = parts[2];
+                    const doc = parts.slice(3).join('|');
+                    
                     isUpdating = true;
-                    const selection = saveSelection();
                     editor.innerHTML = doc;
-                    restoreSelection(selection);
                     isUpdating = false;
+                    
+                    document.title = 'User #' + myId + ' - Collaborative Editor';
                 }
-            }
-            else if(type === 'USERS'){
-                users = {};
-                const userStr = parts[1];
-                if(userStr){
-                    const userParts = userStr.split(',');
-                    userParts.forEach(u => {
-                        const [id, color, cursor, selStart, selEnd] = u.split(':');
-                        users[id] = {
-                            id: parseInt(id),
-                            color: color,
-                            cursor: parseInt(cursor),
-                            selStart: parseInt(selStart),
-                            selEnd: parseInt(selEnd)
-                        };
-                    });
+                else if(type === 'UPDATE'){
+                    const userId = parseInt(parts[1]);
+                    const doc = parts.slice(2).join('|');
+                    
+                    if(userId !== myId){
+                        isUpdating = true;
+                        const selection = saveSelection();
+                        editor.innerHTML = doc;
+                        restoreSelection(selection);
+                        isUpdating = false;
+                    }
                 }
-                updateUserDisplay();
-                renderCursors();
-            }
-            else if(type === 'CHAT'){
-                const userId = parseInt(parts[1]);
-                const userColor = parts[2];
-                const timestamp = parseInt(parts[3]);
-                const message = parts.slice(4).join('|');
-                
-                displayChatMessage(userId, userColor, timestamp, message);
-            }
-        };
-        
-        ws.onerror = () => {
-            status.textContent = '✗ Connection Error';
-            status.className = 'status disconnected';
-        };
-        
-        ws.onclose = () => {
-            status.textContent = '✗ Disconnected';
-            status.className = 'status disconnected';
-        };
+                else if(type === 'USERS'){
+                    users = {};
+                    const userStr = parts[1];
+                    if(userStr){
+                        const userParts = userStr.split(',');
+                        userParts.forEach(u => {
+                            const [id, color, cursor, selStart, selEnd] = u.split(':');
+                            users[id] = {
+                                id: parseInt(id),
+                                color: color,
+                                cursor: parseInt(cursor),
+                                selStart: parseInt(selStart),
+                                selEnd: parseInt(selEnd)
+                            };
+                        });
+                    }
+                    updateUserDisplay();
+                    renderCursors();
+                }
+                else if(type === 'CHAT'){
+                    const userId = parseInt(parts[1]);
+                    const userColor = parts[2];
+                    const timestamp = parseInt(parts[3]);
+                    const message = parts.slice(4).join('|');
+                    
+                    displayChatMessage(userId, userColor, timestamp, message);
+                }
+            };
+            
+            ws.onerror = () => {
+                status.textContent = '✗ Connection Error';
+                status.className = 'status disconnected';
+            };
+            
+            ws.onclose = () => {
+                status.textContent = '✗ Disconnected';
+                status.className = 'status disconnected';
+            };
+        }
         
         function format(command, value = null) {
             document.execCommand(command, false, value);
@@ -587,7 +879,7 @@
         let sendTimeout;
         function sendUpdate(){
             if(isUpdating) return;
-            if(ws.readyState === WebSocket.OPEN){
+            if(ws && ws.readyState === WebSocket.OPEN){
                 clearTimeout(sendTimeout);
                 sendTimeout = setTimeout(() => {
                     ws.send('DOC|' + editor.innerHTML);
@@ -597,7 +889,7 @@
         }
         
         function sendCursor(){
-            if(ws.readyState === WebSocket.OPEN){
+            if(ws && ws.readyState === WebSocket.OPEN){
                 const selection = window.getSelection();
                 let start = 0, end = 0;
                 
@@ -642,7 +934,7 @@
             // Maximum message length (should match server MAX_CHAT_MSG_SIZE)
             const MAX_LENGTH = 2000;
             
-            if(message && ws.readyState === WebSocket.OPEN){
+            if(message && ws && ws.readyState === WebSocket.OPEN){
                 if(message.length > MAX_LENGTH){
                     alert('Message is too long. Maximum ' + MAX_LENGTH + ' characters allowed.');
                     return;
