@@ -12,13 +12,14 @@ static void ev_handler(struct mg_connection *c, int ev, void *ev_data) {
       struct mg_serve_http_opts opts;
       memset(&opts, 0, sizeof(opts));
       opts.document_root = s_web_root;
+      opts.index_files = "index.html,index.htm";
       opts.enable_directory_listing = "no";
       mg_serve_http(c, hm, opts);
       break;
     }
 
     case MG_EV_WEBSOCKET_HANDSHAKE_DONE: {
-      // New WS client connected: notify others
+      // New WS client connected: notify others (optional)
       const char *hello = "hello";
       struct mg_connection *nc;
       for (nc = c->mgr->active_connections; nc != NULL; nc = nc->next) {
