@@ -402,7 +402,7 @@
             <div class="chat-messages" id="chatMessages"></div>
             <div class="chat-input-area">
                 <div class="chat-input-wrapper">
-                    <input type="text" class="chat-input" id="chatInput" placeholder="Type a message..." onkeypress="handleChatKeypress(event)">
+                    <input type="text" class="chat-input" id="chatInput" placeholder="Type a message..." maxlength="2000" onkeypress="handleChatKeypress(event)">
                     <button class="chat-send-btn" id="chatSendBtn" onclick="sendChatMessage()">Send</button>
                 </div>
             </div>
@@ -639,7 +639,14 @@
             const chatInput = document.getElementById('chatInput');
             const message = chatInput.value.trim();
             
+            // Maximum message length (should match server MAX_CHAT_MSG_SIZE)
+            const MAX_LENGTH = 2000;
+            
             if(message && ws.readyState === WebSocket.OPEN){
+                if(message.length > MAX_LENGTH){
+                    alert('Message is too long. Maximum ' + MAX_LENGTH + ' characters allowed.');
+                    return;
+                }
                 ws.send('CHAT|' + message);
                 chatInput.value = '';
             }
