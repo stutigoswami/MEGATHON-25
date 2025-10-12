@@ -100,7 +100,8 @@ int create_session(const char *username, char *session_id_out) {
             sessions[i].expiry = now + SESSION_TIMEOUT;
             sessions[i].active = 1;
             
-            strcpy(session_id_out, sessions[i].session_id);
+            strncpy(session_id_out, sessions[i].session_id, 64);
+            session_id_out[64] = '\0';
             return 1;
         }
     }
@@ -122,7 +123,8 @@ int validate_session(const char *session_id, char *username_out) {
             sessions[i].expiry = now + SESSION_TIMEOUT;
             
             if(username_out) {
-                strcpy(username_out, sessions[i].username);
+                strncpy(username_out, sessions[i].username, 31);
+                username_out[31] = '\0';
             }
             return 1;  // Valid
         }
