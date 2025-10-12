@@ -7,9 +7,34 @@
 #define PORT "8080"
 #define MAX_DOC_SIZE 50000
 #define MAX_CHAT_MSG_SIZE 2000
+#define SESSION_TIMEOUT 3600  // 1 hour in seconds
+#define MAX_SESSIONS 100
 
 static char document[MAX_DOC_SIZE] = "";
 static int next_user_id = 1;
+
+// Hardcoded users
+struct user_credential {
+    const char *username;
+    const char *password;
+};
+
+static struct user_credential valid_users[] = {
+    {"alice", "alice123"},
+    {"bob", "bob123"},
+    {"charlie", "charlie123"}
+};
+
+// Session structure
+struct session {
+    char session_id[65];  // 64 hex chars + null terminator
+    char username[32];
+    time_t expiry;
+    int active;
+};
+
+static struct session sessions[MAX_SESSIONS];
+static int sessions_initialized = 0;
 
 struct user_data {
     int id;
@@ -26,6 +51,96 @@ struct user_list {
 };
 
 static struct user_list *users_head = NULL;
+
+// Initialize sessions
+void init_sessions() {
+    if(!sessions_initialized) {
+        memset(sessions, 0, sizeof(sessions));
+        sessions_initialized = 1;
+    }
+}
+
+// Generate a random session ID
+void generate_session_id(char *out) {
+    const char *hex = "0123456789abcdef";
+    for(int i = 0; i < 64; i++) {
+        out[i] = hex[rand() % 16];
+    }
+    out[64] = '\0';
+}
+
+// Validate username and password
+int validate_credentials(const char *username, const char *password) {
+    for(size_t i = 0; i < sizeof(valid_users) / sizeof(valid_users[0]); i++) {
+        if(strcmp(valid_users[i].username, username) == 0 &&
+           strcmp(valid_users[i].password, password) == 0) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+// Create a new session
+int create_session(const char *username, char *session_id_out) {
+    time_t now = time(NULL);
+    
+    // Clean up expired sessions
+    for(int i = 0; i < MAX_SESSIONS; i++) {
+        if(sessions[i].active && sessions[i].expiry < now) {
+            sessions[i].active = 0;
+        }
+    }
+    
+    // Find an empty slot
+    for(int i = 0; i < MAX_SESSIONS; i++) {
+        if(!sessions[i].active) {
+            generate_session_id(sessions[i].session_id);
+            strncpy(sessions[i].username, username, sizeof(sessions[i].username) - 1);
+            sessions[i].username[sizeof(sessions[i].username) - 1] = '\0';
+            sessions[i].expiry = now + SESSION_TIMEOUT;
+            sessions[i].active = 1;
+            
+            strncpy(session_id_out, sessions[i].session_id, 64);
+            session_id_out[64] = '\0';
+            return 1;
+        }
+    }
+    return 0;  // No available slots
+}
+
+// Validate a session
+int validate_session(const char *session_id, char *username_out) {
+    time_t now = time(NULL);
+    
+    for(int i = 0; i < MAX_SESSIONS; i++) {
+        if(sessions[i].active && strcmp(sessions[i].session_id, session_id) == 0) {
+            if(sessions[i].expiry < now) {
+                sessions[i].active = 0;
+                return 0;  // Expired
+            }
+            
+            // Update expiry time (session refresh)
+            sessions[i].expiry = now + SESSION_TIMEOUT;
+            
+            if(username_out) {
+                strncpy(username_out, sessions[i].username, 31);
+                username_out[31] = '\0';
+            }
+            return 1;  // Valid
+        }
+    }
+    return 0;  // Not found
+}
+
+// Invalidate a session
+void invalidate_session(const char *session_id) {
+    for(int i = 0; i < MAX_SESSIONS; i++) {
+        if(sessions[i].active && strcmp(sessions[i].session_id, session_id) == 0) {
+            sessions[i].active = 0;
+            return;
+        }
+    }
+}
 
 void add_user(struct mg_connection *nc, struct user_data *ud){
     struct user_list *node = malloc(sizeof(struct user_list));
@@ -75,13 +190,145 @@ void broadcast_users_list(){
     broadcast_all(msg, strlen(msg));
 }
 
+// HTTP endpoint: POST /api/login
+void handle_login(struct mg_connection *nc, struct http_message *hm) {
+    char username[100] = {0};
+    char password[100] = {0};
+    
+    // Parse POST body for username and password
+    mg_get_http_var(&hm->body, "username", username, sizeof(username));
+    mg_get_http_var(&hm->body, "password", password, sizeof(password));
+    
+    if(strlen(username) == 0 || strlen(password) == 0) {
+        mg_printf(nc, "HTTP/1.1 400 Bad Request\r\n"
+                      "Content-Type: application/json\r\n"
+                      "Content-Length: 37\r\n\r\n"
+                      "{\"error\":\"Missing credentials\"}");
+        nc->flags |= MG_F_SEND_AND_CLOSE;
+        return;
+    }
+    
+    if(validate_credentials(username, password)) {
+        char session_id[65];
+        if(create_session(username, session_id)) {
+            char response[256];
+            int len = snprintf(response, sizeof(response),
+                "{\"session_id\":\"%s\",\"username\":\"%s\"}", 
+                session_id, username);
+            
+            mg_printf(nc, "HTTP/1.1 200 OK\r\n"
+                          "Content-Type: application/json\r\n"
+                          "Content-Length: %d\r\n\r\n%s", len, response);
+        } else {
+            mg_printf(nc, "HTTP/1.1 500 Internal Server Error\r\n"
+                          "Content-Type: application/json\r\n"
+                          "Content-Length: 36\r\n\r\n"
+                          "{\"error\":\"Session creation failed\"}");
+        }
+    } else {
+        mg_printf(nc, "HTTP/1.1 401 Unauthorized\r\n"
+                      "Content-Type: application/json\r\n"
+                      "Content-Length: 35\r\n\r\n"
+                      "{\"error\":\"Invalid credentials\"}");
+    }
+    nc->flags |= MG_F_SEND_AND_CLOSE;
+}
+
+// HTTP endpoint: POST /api/logout
+void handle_logout(struct mg_connection *nc, struct http_message *hm) {
+    char session_id[100] = {0};
+    
+    mg_get_http_var(&hm->body, "session_id", session_id, sizeof(session_id));
+    
+    if(strlen(session_id) > 0) {
+        invalidate_session(session_id);
+    }
+    
+    mg_printf(nc, "HTTP/1.1 200 OK\r\n"
+                  "Content-Type: application/json\r\n"
+                  "Content-Length: 17\r\n\r\n"
+                  "{\"success\":true}");
+    nc->flags |= MG_F_SEND_AND_CLOSE;
+}
+
+// HTTP endpoint: GET /api/verify
+void handle_verify(struct mg_connection *nc, struct http_message *hm) {
+    char session_id[100] = {0};
+    char username[32] = {0};
+    
+    // Get session_id from query parameter
+    mg_get_http_var(&hm->query_string, "session_id", session_id, sizeof(session_id));
+    
+    if(strlen(session_id) == 0) {
+        mg_printf(nc, "HTTP/1.1 400 Bad Request\r\n"
+                      "Content-Type: application/json\r\n"
+                      "Content-Length: 36\r\n\r\n"
+                      "{\"error\":\"Missing session_id\"}");
+        nc->flags |= MG_F_SEND_AND_CLOSE;
+        return;
+    }
+    
+    if(validate_session(session_id, username)) {
+        char response[256];
+        int len = snprintf(response, sizeof(response),
+            "{\"valid\":true,\"username\":\"%s\"}", username);
+        
+        mg_printf(nc, "HTTP/1.1 200 OK\r\n"
+                      "Content-Type: application/json\r\n"
+                      "Content-Length: %d\r\n\r\n%s", len, response);
+    } else {
+        mg_printf(nc, "HTTP/1.1 200 OK\r\n"
+                      "Content-Type: application/json\r\n"
+                      "Content-Length: 16\r\n\r\n"
+                      "{\"valid\":false}");
+    }
+    nc->flags |= MG_F_SEND_AND_CLOSE;
+}
+
 static void ev_handler(struct mg_connection *nc, int ev, void *ev_data){
     if(ev == MG_EV_HTTP_REQUEST){
         struct http_message *hm = (struct http_message *)ev_data;
+        
+        // Check for API endpoints
+        if(mg_vcmp(&hm->uri, "/api/login") == 0 && mg_vcmp(&hm->method, "POST") == 0) {
+            handle_login(nc, hm);
+            return;
+        }
+        else if(mg_vcmp(&hm->uri, "/api/logout") == 0 && mg_vcmp(&hm->method, "POST") == 0) {
+            handle_logout(nc, hm);
+            return;
+        }
+        else if(mg_vcmp(&hm->uri, "/api/verify") == 0 && mg_vcmp(&hm->method, "GET") == 0) {
+            handle_verify(nc, hm);
+            return;
+        }
+        
+        // Serve static files
         struct mg_serve_http_opts opts;
         memset(&opts, 0, sizeof(opts));
         opts.document_root = "../client";
         mg_serve_http(nc, hm, opts);
+    }
+    else if(ev == MG_EV_WEBSOCKET_HANDSHAKE_REQUEST){
+        // Validate session before allowing WebSocket upgrade
+        struct http_message *hm = (struct http_message *)ev_data;
+        char session_id[100] = {0};
+        char username[32] = {0};
+        
+        // Get session_id from query parameter in WebSocket URL
+        mg_get_http_var(&hm->query_string, "session_id", session_id, sizeof(session_id));
+        
+        if(strlen(session_id) == 0 || !validate_session(session_id, username)) {
+            // Reject WebSocket connection
+            mg_printf(nc, "HTTP/1.1 401 Unauthorized\r\n"
+                          "Content-Length: 12\r\n\r\n"
+                          "Unauthorized");
+            nc->flags |= MG_F_SEND_AND_CLOSE;
+            return;
+        }
+        
+        // Store username in connection for later use
+        // We'll retrieve it after handshake is done
     }
     else if(ev == MG_EV_WEBSOCKET_HANDSHAKE_DONE){
         struct user_data *ud = malloc(sizeof(struct user_data));
@@ -191,6 +438,8 @@ int main(void){
     struct mg_connection *nc;
 
     srand(time(NULL));
+    init_sessions();
+    
     mg_mgr_init(&mgr, NULL);
     
     nc = mg_bind(&mgr, PORT, ev_handler);
